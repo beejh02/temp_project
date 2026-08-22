@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import "./NaverMap.css";
 
 function NaverMap({ onMapReady }) {
   const mapContainerRef = useRef(null);
