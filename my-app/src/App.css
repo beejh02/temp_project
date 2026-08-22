@@ -1,5 +1,20 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+
+  margin: 0;
+  padding: 0;
+}
+
 .app {
   position: fixed;
+
   inset: 0;
 
   width: 100vw;
@@ -8,27 +23,51 @@
   overflow: hidden;
 }
 
+/*
+ * Naver Map
+ */
 .map {
   position: absolute;
+
   inset: 0;
 
   width: 100%;
   height: 100%;
 }
 
+/*
+ * 검색 영역
+ */
 .search-container {
   position: absolute;
+
   top: 20px;
   left: 20px;
 
-  display: flex;
-  gap: 8px;
-
   z-index: 1000;
+
+  width: min(
+    460px,
+    calc(100vw - 40px)
+  );
 }
 
-.search-container input {
-  width: 360px;
+.search-row {
+  display: flex;
+
+  width: 100%;
+
+  gap: 8px;
+}
+
+/*
+ * 검색 Input
+ */
+.search-row input {
+  flex: 1;
+
+  min-width: 0;
+
   height: 44px;
 
   padding: 0 14px;
@@ -39,10 +78,23 @@
   background: white;
 
   font-size: 14px;
+
   outline: none;
+
+  box-shadow: 0 2px 8px
+    rgba(0, 0, 0, 0.12);
 }
 
-.search-container button {
+.search-row input:focus {
+  border-color: #03c75a;
+}
+
+/*
+ * 검색 Button
+ */
+.search-row button {
+  flex-shrink: 0;
+
   height: 44px;
 
   padding: 0 18px;
@@ -51,19 +103,34 @@
   border-radius: 6px;
 
   background: #03c75a;
+
   color: white;
 
+  font-size: 14px;
   font-weight: 600;
 
   cursor: pointer;
+
+  box-shadow: 0 2px 8px
+    rgba(0, 0, 0, 0.12);
 }
 
-.search-message {
-  position: absolute;
-  top: 52px;
-  left: 0;
+.search-row button:hover {
+  background: #02b351;
+}
 
-  min-width: 250px;
+.search-row button:active {
+  background: #029747;
+}
+
+/*
+ * 검색 결과 메시지
+ */
+.search-message {
+  margin-top: 8px;
+
+  width: fit-content;
+  max-width: 100%;
 
   padding: 10px 12px;
 
@@ -73,5 +140,32 @@
 
   font-size: 13px;
 
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  word-break: keep-all;
+
+  box-shadow: 0 2px 8px
+    rgba(0, 0, 0, 0.15);
+}
+
+/*
+ * 모바일 대응
+ */
+@media (max-width: 600px) {
+  .search-container {
+    top: 12px;
+    left: 12px;
+
+    width: calc(100vw - 24px);
+  }
+
+  .search-row input {
+    height: 42px;
+
+    font-size: 13px;
+  }
+
+  .search-row button {
+    height: 42px;
+
+    padding: 0 14px;
+  }
 }
