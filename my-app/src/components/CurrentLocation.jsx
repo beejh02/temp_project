@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "./CurrentLocation.css";
 
 function CurrentLocation({ map }) {
   const markerRef = useRef(null);
