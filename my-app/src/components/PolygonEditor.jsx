@@ -78,6 +78,7 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
   /* Polygon 저장 */
   const handleSave = () => {
     const trimmedName = name.trim();
+
     if (!trimmedName) {
       alert("시장 이름을 입력해주세요.");
       return;
@@ -88,18 +89,36 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
     }
 
     /*
-     * 추후 Spring Boot API로 전달할 데이터 형태.
-     *
-     * 현재는 실제 저장하지 않고
-     * 데이터 구조만 확인한다.
+     * 애플리케이션 좌표
+     * { lat, lng }
+     * ↓
+     * GeoJSON 좌표
+     * [lng, lat]
      */
+    const geoJsonCoordinates = coordinates.map(({ lat, lng }) => [lng, lat]);
+
+    /*
+     * GeoJSON Polygon의 LinearRing은
+     * 첫 좌표와 마지막 좌표가 동일해야 한다.
+     */
+    geoJsonCoordinates.push([
+      geoJsonCoordinates[0][0],
+      geoJsonCoordinates[0][1],
+    ]);
+
+    /* GeoJSON Polygon 생성 */
+    const boundary = {
+      type: "Polygon",
+      coordinates: [geoJsonCoordinates],
+    };
+
+    /* 추후 Spring Boot API로 전달할 Market 데이터 */
     const marketData = {
       name: trimmedName,
-      coordinates,
+      boundary,
     };
 
     console.log("저장할 시장 데이터:", marketData);
-
     alert(`${trimmedName} Polygon 테스트 완료 (${coordinates.length}개 정점)`);
   };
 
