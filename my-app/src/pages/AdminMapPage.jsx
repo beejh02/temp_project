@@ -12,9 +12,13 @@ function AdminMapPage() {
   const [map, setMap] = useState(null);
 
   /*
-   * PolygonEditor와 MarketPolygon이
-   * 공유하는 시장 영역 좌표.
-   *
+   * 현재 관리자가 편집 중인 시장 이름.
+   * 추후 DB의 Market Entity의 name과 연결된다.
+   */
+  const [marketName, setMarketName] = useState("");
+
+  /*
+   * 현재 관리자가 편집 중인 시장 영역 좌표.
    * PolygonEditor:
    * 좌표 생성 / 수정
    *
@@ -29,7 +33,9 @@ function AdminMapPage() {
       <MarketPolygon map={map} coordinates={marketBoundary} />
       <PolygonEditor
         map={map}
+        name={marketName}
         coordinates={marketBoundary}
+        onNameChange={setMarketName}
         onChange={setMarketBoundary}
       />
       <MapSearch map={map} />
