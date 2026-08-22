@@ -9,6 +9,36 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
+.polygon-editor-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.polygon-editor-name label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.polygon-editor-name input {
+  width: 220px;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  font-size: 13px;
+  outline: none;
+}
+
+.polygon-editor-name input:focus {
+  border-color: #03c75a;
+}
+
 .polygon-editor-info {
   margin-bottom: 8px;
   font-size: 13px;
@@ -63,6 +93,11 @@
     left: 12px;
     bottom: 12px;
     padding: 10px;
+  }
+
+  .polygon-editor-name input {
+    width: 200px;
+    height: 36px;
   }
 
   .polygon-editor-actions {

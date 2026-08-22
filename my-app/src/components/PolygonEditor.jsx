@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import "./PolygonEditor.css";
 
-function PolygonEditor({ map, coordinates, onChange }) {
+function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
   const markersRef = useRef([]);
 
   /*
@@ -75,70 +75,51 @@ function PolygonEditor({ map, coordinates, onChange }) {
     onChange([]);
   };
 
-  /*  Polygon 저장 */
+  /* Polygon 저장 */
   const handleSave = () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      alert("시장 이름을 입력해주세요.");
+      return;
+    }
     if (coordinates.length < 3) {
       alert("Polygon은 최소 3개의 정점이 필요합니다.");
       return;
     }
 
     /*
-     * 현재는 관리자 화면에서 기능 테스트만 진행.
+     * 추후 Spring Boot API로 전달할 데이터 형태.
      *
-     * coordinates에는 다음 형태로 좌표가 들어있다.
-     *
-     * [
-     *   { lat: 36.xxxx, lng: 127.xxxx },
-     *   ...
-     * ]
-     *
-     * ========================================
-     * TODO: Spring Boot / DB 연결
-     * ========================================
-     *
-     * 추후 저장 버튼 클릭 시:
-     *
-     * PolygonEditor
-     *      ↓
-     * marketApi.js
-     *      ↓
-     * Spring Boot REST API
-     *      ↓
-     * PostgreSQL
-     *
-     * 구조로 Polygon을 영구 저장한다.
-     *
-     * DB 저장 시 GeoJSON을 사용한다면
-     * 좌표 순서는 다음과 같이 변환한다.
-     *
-     * 현재:
-     * { lat, lng }
-     *
-     * GeoJSON:
-     * [lng, lat]
-     *
-     * 예:
-     *
-     * const polygon = {
-     *   type: "Polygon",
-     *   coordinates: [
-     *     coordinates.map(({ lat, lng }) => [
-     *       lng,
-     *       lat,
-     *     ]),
-     *   ],
-     * };
-     *
-     * await saveMarketBoundary(marketId, polygon);
+     * 현재는 실제 저장하지 않고
+     * 데이터 구조만 확인한다.
      */
+    const marketData = {
+      name: trimmedName,
+      coordinates,
+    };
 
-    console.log("저장할 Polygon 좌표:", coordinates);
-    alert(`Polygon 테스트 완료 (${coordinates.length}개 정점)`);
+    console.log("저장할 시장 데이터:", marketData);
+
+    alert(`${trimmedName} Polygon 테스트 완료 (${coordinates.length}개 정점)`);
   };
 
   return (
     <div className="polygon-editor">
+      <div className="polygon-editor-name">
+        <label htmlFor="market-name">시장 이름</label>
+
+        <input
+          id="market-name"
+          type="text"
+          value={name}
+          onChange={(event) => onNameChange(event.target.value)}
+          placeholder="예: 대전 중앙시장"
+          maxLength={100}
+        />
+      </div>
+
       <div className="polygon-editor-info">정점 {coordinates.length}개</div>
+
       <div className="polygon-editor-actions">
         <button
           type="button"
@@ -160,7 +141,7 @@ function PolygonEditor({ map, coordinates, onChange }) {
           type="button"
           className="polygon-save-button"
           onClick={handleSave}
-          disabled={coordinates.length < 3}
+          disabled={!name.trim() || coordinates.length < 3}
         >
           저장
         </button>
