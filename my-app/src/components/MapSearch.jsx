@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "./MapSearch.css";
 
 function MapSearch({ map }) {
   const markerRef = useRef(null);
