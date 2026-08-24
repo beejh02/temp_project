@@ -11,6 +11,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Component;
 
 import com.nurigo.nurigo.market.dto.MarketCreateRequest;
+import com.nurigo.nurigo.market.dto.MarketResponse;
 
 @Component
 public class MarketGeometryMapper {
@@ -19,12 +20,14 @@ public class MarketGeometryMapper {
             = new GeometryFactory(new PrecisionModel(), 4326);
 
     public Polygon toPolygon(MarketCreateRequest.GeoJsonPolygon geoJson) {
-
         if (geoJson == null) {
             throw new IllegalArgumentException("boundary는 필수입니다.");
         }
+
         if (!"Polygon".equalsIgnoreCase(geoJson.type())) {
-            throw new IllegalArgumentException("boundary type은 Polygon이어야 합니다.");
+            throw new IllegalArgumentException(
+                    "boundary type은 Polygon이어야 합니다."
+            );
         }
 
         List<List<List<Double>>> rings = geoJson.coordinates();
@@ -35,7 +38,10 @@ public class MarketGeometryMapper {
             );
         }
 
+        // 첫 번째 ring은 Polygon 외곽선
         LinearRing shell = toLinearRing(rings.get(0));
+
+        // 두 번째 ring부터는 Polygon 내부의 hole
         LinearRing[] holes = new LinearRing[rings.size() - 1];
 
         for (int i = 1; i < rings.size(); i++) {
@@ -43,6 +49,36 @@ public class MarketGeometryMapper {
         }
 
         return geometryFactory.createPolygon(shell, holes);
+    }
+
+    // JTS Polygon → GeoJSON
+    public MarketResponse.GeoJsonPolygon toGeoJson(Polygon polygon) {
+        if (polygon == null) {
+            throw new IllegalArgumentException("Polygon은 필수입니다.");
+        }
+
+        List<List<List<Double>>> rings = new ArrayList<>();
+
+        // 외곽선
+        rings.add(
+                toCoordinateList(
+                        polygon.getExteriorRing().getCoordinates()
+                )
+        );
+
+        // 내부 hole
+        for (int i = 0; i < polygon.getNumInteriorRing(); i++) {
+            rings.add(
+                    toCoordinateList(
+                            polygon.getInteriorRingN(i).getCoordinates()
+                    )
+            );
+        }
+
+        return new MarketResponse.GeoJsonPolygon(
+                "Polygon",
+                rings
+        );
     }
 
     private LinearRing toLinearRing(List<List<Double>> ring) {
@@ -87,5 +123,22 @@ public class MarketGeometryMapper {
         return geometryFactory.createLinearRing(
                 coordinates.toArray(Coordinate[]::new)
         );
+    }
+
+    private List<List<Double>> toCoordinateList(
+            Coordinate[] coordinates
+    ) {
+        List<List<Double>> result = new ArrayList<>();
+
+        for (Coordinate coordinate : coordinates) {
+            result.add(
+                    List.of(
+                            coordinate.getX(),
+                            coordinate.getY()
+                    )
+            );
+        }
+
+        return result;
     }
 }
