@@ -44,6 +44,17 @@ public class MarketService {
                 .toList();
     }
 
+    public List<MarketResponse> findMarketsAtLocation(
+            double latitude,
+            double longitude
+    ) {
+        return marketRepository
+                .findMarketsCoveringPoint(latitude, longitude)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private MarketResponse toResponse(Market market) {
         return new MarketResponse(
                 market.getId(),
