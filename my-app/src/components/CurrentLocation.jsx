@@ -5,10 +5,34 @@ const INITIAL_MOVE_STEP = 0.00005;
 const MIN_MOVE_STEP = 0.000005;
 const MAX_MOVE_STEP = 0.001;
 
+/*
+ * 현재 좌표가 어느 시장에 포함되는지 Backend에 조회
+ */
+async function fetchMarketsAtLocation(latitude, longitude) {
+  try {
+    const response = await fetch(
+      `/api/markets/location?latitude=${latitude}&longitude=${longitude}`,
+    );
+
+    if (!response.ok) {
+      throw new Error(`현재 위치 기반 시장 조회 실패: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("현재 위치 기반 시장 조회 결과:", data);
+
+    return data;
+  } catch (error) {
+    console.error("현재 위치 기반 시장 조회 중 오류:", error);
+
+    return [];
+  }
+}
+
 function CurrentLocation({ map }) {
   const markerRef = useRef(null);
   const positionRef = useRef(null);
-  
+
   const moveStepRef = useRef(INITIAL_MOVE_STEP);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -96,7 +120,14 @@ function CurrentLocation({ map }) {
       };
 
       const newPosition = new window.naver.maps.LatLng(lat, lng);
+
       markerRef.current.setPosition(newPosition);
+
+      /*
+       * WASD로 이동한 새 좌표를 기준으로
+       * 현재 포함된 시장 조회
+       */
+      fetchMarketsAtLocation(lat, lng);
 
       setMessage(
         `테스트 위치: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 속도: ${moveStep.toFixed(6)}`,
@@ -165,6 +196,12 @@ function CurrentLocation({ map }) {
         /* 현재 위치로 지도 이동 */
         map.panTo(currentPosition);
         map.setZoom(18);
+
+        /*
+         * GPS로 가져온 실제 좌표를 기준으로
+         * 현재 포함된 시장 조회
+         */
+        fetchMarketsAtLocation(latitude, longitude);
 
         setMessage(
           `현재 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 / PageUp·PageDown 속도 조절`,
