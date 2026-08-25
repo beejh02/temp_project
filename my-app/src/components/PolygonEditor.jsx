@@ -14,6 +14,7 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
       marker.setMap(null);
     });
     markersRef.current = [];
+
     if (!map) return;
     if (!window.naver?.maps) return;
 
@@ -47,6 +48,7 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
       (event) => {
         const lat = event.coord.lat();
         const lng = event.coord.lng();
+
         const newPoint = {
           lat,
           lng,
@@ -76,13 +78,14 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
   };
 
   /* Polygon 저장 */
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedName = name.trim();
 
     if (!trimmedName) {
       alert("시장 이름을 입력해주세요.");
       return;
     }
+
     if (coordinates.length < 3) {
       alert("Polygon은 최소 3개의 정점이 필요합니다.");
       return;
@@ -112,14 +115,33 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
       coordinates: [geoJsonCoordinates],
     };
 
-    /* 추후 Spring Boot API로 전달할 Market 데이터 */
     const marketData = {
       name: trimmedName,
       boundary,
     };
 
-    console.log("저장할 시장 데이터:", marketData);
-    alert(`${trimmedName} Polygon 테스트 완료 (${coordinates.length}개 정점)`);
+    try {
+      const response = await fetch("/api/markets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(marketData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`시장 저장 실패: ${response.status}`);
+      }
+
+      const marketId = await response.json();
+
+      console.log("저장된 시장 ID:", marketId);
+
+      alert(`${trimmedName} 저장 완료 (ID: ${marketId})`);
+    } catch (error) {
+      console.error("시장 저장 중 오류:", error);
+      alert("시장 저장에 실패했습니다.");
+    }
   };
 
   return (
