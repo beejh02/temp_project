@@ -6,6 +6,7 @@ import org.locationtech.jts.geom.Polygon;
 import org.springframework.stereotype.Service;
 
 import com.nurigo.nurigo.market.dto.MarketCreateRequest;
+import com.nurigo.nurigo.market.dto.MarketResponse;
 import com.nurigo.nurigo.market.entity.Market;
 import com.nurigo.nurigo.market.mapper.MarketGeometryMapper;
 import com.nurigo.nurigo.market.repository.MarketRepository;
@@ -36,7 +37,20 @@ public class MarketService {
         return marketRepository.save(market);
     }
 
-    public List<Market> findAll() {
-        return marketRepository.findAll();
+    public List<MarketResponse> findAll() {
+        return marketRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private MarketResponse toResponse(Market market) {
+        return new MarketResponse(
+                market.getId(),
+                market.getName(),
+                marketGeometryMapper.toGeoJson(market.getBoundary()),
+                market.getCreatedAt(),
+                market.getUpdatedAt()
+        );
     }
 }
