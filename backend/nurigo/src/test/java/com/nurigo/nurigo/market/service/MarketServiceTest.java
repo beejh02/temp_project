@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nurigo.nurigo.market.dto.MarketCreateRequest;
+import com.nurigo.nurigo.market.dto.MarketResponse;
 import com.nurigo.nurigo.market.entity.Market;
 
 @SpringBootTest
@@ -56,14 +57,14 @@ class MarketServiceTest {
         assertEquals(4326, savedMarket.getBoundary().getSRID());
 
         // 전체 조회
-        List<Market> markets = marketService.findAll();
+        List<MarketResponse> markets = marketService.findAll();
 
         // 저장한 시장이 조회 결과에 존재하는지 확인
         assertTrue(
                 markets.stream()
                         .anyMatch(
-                                saved
-                                -> saved.getId().equals(savedMarket.getId())
+                                market
+                                -> market.id().equals(savedMarket.getId())
                         )
         );
     }
