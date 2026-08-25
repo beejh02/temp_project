@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import "./CurrentLocation.css";
 
-const MOVE_STEP = 0.00005;
+const INITIAL_MOVE_STEP = 0.00005;
+const MIN_MOVE_STEP = 0.000005;
+const MAX_MOVE_STEP = 0.001;
 
 function CurrentLocation({ map }) {
   const markerRef = useRef(null);
   const positionRef = useRef(null);
+  
+  const moveStepRef = useRef(INITIAL_MOVE_STEP);
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -27,6 +31,10 @@ function CurrentLocation({ map }) {
 
       const target = event.target;
 
+      /*
+       * input 등에 글자를 입력하고 있을 때는
+       * 키보드 조작 기능을 실행하지 않는다.
+       */
       if (
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
@@ -36,11 +44,25 @@ function CurrentLocation({ map }) {
         return;
       }
 
-      if (!positionRef.current || !markerRef.current) {
+      const key = event.key.toLowerCase();
+
+      if (key === "pageup") {
+        event.preventDefault();
+        moveStepRef.current = Math.min(moveStepRef.current * 2, MAX_MOVE_STEP);
+        setMessage(`이동 속도 증가: ${moveStepRef.current.toFixed(6)}`);
         return;
       }
 
-      const key = event.key.toLowerCase();
+      if (key === "pagedown") {
+        event.preventDefault();
+        moveStepRef.current = Math.max(moveStepRef.current / 2, MIN_MOVE_STEP);
+        setMessage(`이동 속도 감소: ${moveStepRef.current.toFixed(6)}`);
+        return;
+      }
+
+      if (!positionRef.current || !markerRef.current) {
+        return;
+      }
 
       if (!["w", "a", "s", "d"].includes(key)) {
         return;
@@ -49,24 +71,21 @@ function CurrentLocation({ map }) {
       event.preventDefault();
 
       let { lat, lng } = positionRef.current;
+      const moveStep = moveStepRef.current;
 
       switch (key) {
         case "w":
-          lat += MOVE_STEP;
+          lat += moveStep;
           break;
-
         case "s":
-          lat -= MOVE_STEP;
+          lat -= moveStep;
           break;
-
         case "a":
-          lng -= MOVE_STEP;
+          lng -= moveStep;
           break;
-
         case "d":
-          lng += MOVE_STEP;
+          lng += moveStep;
           break;
-
         default:
           return;
       }
@@ -77,10 +96,11 @@ function CurrentLocation({ map }) {
       };
 
       const newPosition = new window.naver.maps.LatLng(lat, lng);
-
       markerRef.current.setPosition(newPosition);
 
-      setMessage(`테스트 위치: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      setMessage(
+        `테스트 위치: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 속도: ${moveStep.toFixed(6)}`,
+      );
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -147,7 +167,7 @@ function CurrentLocation({ map }) {
         map.setZoom(18);
 
         setMessage(
-          `현재 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 가능`,
+          `현재 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 / PageUp·PageDown 속도 조절`,
         );
 
         setIsLoading(false);
