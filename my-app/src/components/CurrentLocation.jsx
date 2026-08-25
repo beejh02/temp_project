@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import "./CurrentLocation.css";
 
+const MOVE_STEP = 0.00005;
+
 function CurrentLocation({ map }) {
   const markerRef = useRef(null);
+  const positionRef = useRef(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -12,6 +16,77 @@ function CurrentLocation({ map }) {
         markerRef.current.setMap(null);
         markerRef.current = null;
       }
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (!map) {
+        return;
+      }
+
+      const target = event.target;
+
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (!positionRef.current || !markerRef.current) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (!["w", "a", "s", "d"].includes(key)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      let { lat, lng } = positionRef.current;
+
+      switch (key) {
+        case "w":
+          lat += MOVE_STEP;
+          break;
+
+        case "s":
+          lat -= MOVE_STEP;
+          break;
+
+        case "a":
+          lng -= MOVE_STEP;
+          break;
+
+        case "d":
+          lng += MOVE_STEP;
+          break;
+
+        default:
+          return;
+      }
+
+      positionRef.current = {
+        lat,
+        lng,
+      };
+
+      const newPosition = new window.naver.maps.LatLng(lat, lng);
+
+      markerRef.current.setPosition(newPosition);
+
+      setMessage(`테스트 위치: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [map]);
 
@@ -40,6 +115,14 @@ function CurrentLocation({ map }) {
       (position) => {
         const { latitude, longitude } = position.coords;
 
+        /*
+         * WASD 이동의 시작 위치 저장
+         */
+        positionRef.current = {
+          lat: latitude,
+          lng: longitude,
+        };
+
         const currentPosition = new window.naver.maps.LatLng(
           latitude,
           longitude,
@@ -64,8 +147,9 @@ function CurrentLocation({ map }) {
         map.setZoom(18);
 
         setMessage(
-          `현재 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+          `현재 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 가능`,
         );
+
         setIsLoading(false);
       },
 
