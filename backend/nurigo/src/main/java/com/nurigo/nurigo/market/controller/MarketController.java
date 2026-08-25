@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nurigo.nurigo.market.dto.MarketCreateRequest;
@@ -42,6 +43,19 @@ public class MarketController {
     public ResponseEntity<List<MarketResponse>> getMarkets() {
         return ResponseEntity.ok(
                 marketService.findAll()
+        );
+    }
+
+    @GetMapping("/location")
+    public ResponseEntity<List<MarketResponse>> getMarketsAtLocation(
+            @RequestParam double latitude,
+            @RequestParam double longitude
+    ) {
+        return ResponseEntity.ok(
+                marketService.findMarketsAtLocation(
+                        latitude,
+                        longitude
+                )
         );
     }
 }
