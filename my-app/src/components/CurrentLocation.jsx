@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./CurrentLocation.css";
 
 const INITIAL_MOVE_STEP = 0.00005;
@@ -18,31 +18,80 @@ async function fetchMarketsAtLocation(latitude, longitude) {
       throw new Error(`현재 위치 기반 시장 조회 실패: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log("현재 위치 기반 시장 조회 결과:", data);
-
-    return data;
+    return await response.json();
   } catch (error) {
     console.error("현재 위치 기반 시장 조회 중 오류:", error);
 
-    return [];
+    return null;
   }
 }
 
 function CurrentLocation({ map }) {
   const markerRef = useRef(null);
   const positionRef = useRef(null);
-
   const moveStepRef = useRef(INITIAL_MOVE_STEP);
+
+  /*
+   * 현재 들어가 있는 시장 ID
+   * null = 현재 시장 외부
+   */
+  const currentMarketIdRef = useRef(null);
+
+  /*진입 알림을 3초 뒤 제거하기 위한 Timer */
+  const entryMessageTimerRef = useRef(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [entryMessage, setEntryMessage] = useState("");
+
+  /* 현재 좌표의 시장 상태 확인 */
+  const checkMarketEntry = useCallback(async (latitude, longitude) => {
+    const markets = await fetchMarketsAtLocation(latitude, longitude);
+
+    /*
+     * API 오류가 발생한 경우
+     * 기존 시장 상태는 변경하지 않는다.
+     */
+    if (markets === null) {
+      return;
+    }
+
+    /* 현재 시장 외부 */
+    if (markets.length === 0) {
+      currentMarketIdRef.current = null;
+      return;
+    }
+
+    /* MVP에서는 첫 번째 시장을 현재 시장으로 사용 */
+    const market = markets[0];
+
+    if (currentMarketIdRef.current === market.id) {
+      return;
+    }
+
+    currentMarketIdRef.current = market.id;
+    setEntryMessage(`${market.name}`);
+
+    if (entryMessageTimerRef.current) {
+      clearTimeout(entryMessageTimerRef.current);
+    }
+
+    /* 3초 후 알림 제거 */
+    entryMessageTimerRef.current = setTimeout(() => {
+      setEntryMessage("");
+      entryMessageTimerRef.current = null;
+    }, 3000);
+  }, []);
 
   useEffect(() => {
     return () => {
       if (markerRef.current) {
         markerRef.current.setMap(null);
         markerRef.current = null;
+      }
+
+      if (entryMessageTimerRef.current) {
+        clearTimeout(entryMessageTimerRef.current);
       }
     };
   }, [map]);
@@ -127,7 +176,7 @@ function CurrentLocation({ map }) {
        * WASD로 이동한 새 좌표를 기준으로
        * 현재 포함된 시장 조회
        */
-      fetchMarketsAtLocation(lat, lng);
+      checkMarketEntry(lat, lng);
 
       setMessage(
         `테스트 위치: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 속도: ${moveStep.toFixed(6)}`,
@@ -139,7 +188,7 @@ function CurrentLocation({ map }) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [map]);
+  }, [map, checkMarketEntry]);
 
   /* 현재 위치 가져오기 */
   const handleCurrentLocation = () => {
@@ -197,12 +246,8 @@ function CurrentLocation({ map }) {
         map.panTo(currentPosition);
         map.setZoom(18);
 
-        /*
-         * GPS로 가져온 실제 좌표를 기준으로
-         * 현재 포함된 시장 조회
-         */
-        fetchMarketsAtLocation(latitude, longitude);
-
+        /* GPS 위치 기준 시장 진입 여부 확인 */
+        checkMarketEntry(latitude, longitude);
         setMessage(
           `현재 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 / PageUp·PageDown 속도 조절`,
         );
@@ -254,6 +299,9 @@ function CurrentLocation({ map }) {
       </button>
 
       {message && <div className="current-location-message">{message}</div>}
+      {entryMessage && (
+        <div className="market-entry-message">{entryMessage}</div>
+      )}
     </div>
   );
 }
