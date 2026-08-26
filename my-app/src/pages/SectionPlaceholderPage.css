@@ -1,0 +1,56 @@
+.section-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(239, 125, 55, 0.13), transparent 23rem),
+    #f5f5f0;
+  color: #1d372d;
+  font-family:
+    Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+.section-placeholder__card {
+  width: min(440px, 100%);
+  padding: 38px 32px;
+  border: 1px solid rgba(30, 72, 54, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 252, 0.94);
+  text-align: center;
+  box-shadow: 0 14px 36px rgba(24, 61, 46, 0.09);
+}
+
+.section-placeholder__card > span {
+  color: #d8682a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.section-placeholder__card h1 {
+  margin: 8px 0 10px;
+  font-size: 30px;
+  letter-spacing: -0.05em;
+}
+
+.section-placeholder__card p {
+  margin: 0;
+  color: #78857f;
+  font-size: 13px;
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+@media (max-width: 600px) {
+  .section-placeholder {
+    padding: 16px;
+  }
+
+  .section-placeholder__card {
+    padding: 32px 22px;
+    border-radius: 21px;
+  }
+}
