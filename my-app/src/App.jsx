@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import UserLayout from "./components/UserLayout";
 import UserMapPage from "./pages/UserMapPage";
 import AdminMapPage from "./pages/AdminMapPage";
+import MissionsPage from "./pages/MissionsPage";
 import SectionPlaceholderPage from "./pages/SectionPlaceholderPage";
 
 function App() {
@@ -12,16 +13,7 @@ function App() {
         {/* 사용자 화면 */}
         <Route element={<UserLayout />}>
           <Route path="/" element={<UserMapPage />} />
-          <Route
-            path="/missions"
-            element={(
-              <SectionPlaceholderPage
-                eyebrow="다음 개발 단계"
-                title="미션"
-                description="오늘의 미션과 도전 기록이 이 화면에 들어올 예정입니다."
-              />
-            )}
-          />
+          <Route path="/missions" element={<MissionsPage />} />
           <Route
             path="/mypage"
             element={(
