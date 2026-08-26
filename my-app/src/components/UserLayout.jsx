@@ -39,44 +39,35 @@ const navigationItems = [
 function UserLayout() {
   return (
     <div className="user-layout">
-      <header className="user-navigation">
-        <NavLink className="user-navigation__brand" to="/" aria-label="누리고 지도 홈">
-          <span aria-hidden="true">누</span>
-          <strong>누리고</strong>
-        </NavLink>
-
-        <nav className="user-navigation__menu" aria-label="주요 메뉴">
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `user-navigation__item${isActive ? " is-active" : ""}`
-              }
-            >
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                {item.icon}
-              </svg>
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-
-        <span className="user-navigation__spacer" aria-hidden="true" />
-      </header>
-
       <main className="user-layout__content">
         <Outlet />
       </main>
+
+      <nav className="user-navigation" aria-label="주요 메뉴">
+        {navigationItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `user-navigation__item${isActive ? " is-active" : ""}`
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {item.icon}
+            </svg>
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }
