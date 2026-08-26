@@ -1,0 +1,83 @@
+.store-import-panel {
+  position: absolute;
+  top: 84px;
+  right: 72px;
+  z-index: 1000;
+  display: grid;
+  width: min(300px, calc(100vw - 40px));
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(31, 43, 59, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 14px rgba(20, 30, 42, 0.16);
+  backdrop-filter: blur(8px);
+}
+
+.store-import-panel__title {
+  color: #273343;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.store-import-panel__file {
+  display: block;
+  overflow: hidden;
+  padding: 9px 10px;
+  border: 1px dashed #aeb8c5;
+  border-radius: 7px;
+  color: #5e6876;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.store-import-panel__file:hover {
+  border-color: #03a857;
+  color: #16824b;
+}
+
+.store-import-panel__file input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.store-import-panel__button {
+  height: 36px;
+  border: 0;
+  border-radius: 7px;
+  background: #03a857;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.store-import-panel__button:hover:not(:disabled) {
+  background: #028b49;
+}
+
+.store-import-panel__button:disabled {
+  background: #b6d8c5;
+  cursor: default;
+}
+
+.store-import-panel__message {
+  color: #5f6977;
+  font-size: 11px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+@media (max-width: 600px) {
+  .store-import-panel {
+    top: 66px;
+    right: 64px;
+    width: min(250px, calc(100vw - 24px));
+    padding: 10px;
+  }
+}
