@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="store-icon-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 10v9h16v-9"/>
+    <path d="M3 10l2-5h14l2 5"/>
+    <path d="M3 10a2.25 2.25 0 0 0 4.5 0 2.25 2.25 0 0 0 4.5 0 2.25 2.25 0 0 0 4.5 0 2.25 2.25 0 0 0 4.5 0"/>
+    <path d="M9 19v-5h6v5"/>
+  </symbol>
+  <symbol id="store-icon-food" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 3v7M3.5 3v4.5A2.5 2.5 0 0 0 6 10a2.5 2.5 0 0 0 2.5-2.5V3M6 10v11"/>
+    <path d="M15.5 13V6.5A3.5 3.5 0 0 1 19 3v18M15.5 13H19"/>
+  </symbol>
+  <symbol id="store-icon-retail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 8h14l-1 13H6L5 8Z"/>
+    <path d="M9 10V7a3 3 0 0 1 6 0v3"/>
+  </symbol>
+  <symbol id="store-icon-service" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m14.5 6.5 3-3a4 4 0 0 1-5 5L5 16a2.1 2.1 0 1 0 3 3l7.5-7.5a4 4 0 0 1 5-5l-3 3"/>
+    <path d="m6.5 17.5 1 1"/>
+  </symbol>
+  <symbol id="store-icon-science" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/>
+    <path d="M7.5 15h9"/>
+    <circle cx="10" cy="18" r=".8" fill="currentColor" stroke="none"/>
+    <circle cx="14" cy="17" r=".8" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="store-icon-education" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 5.5A3.5 3.5 0 0 1 7.5 4H12v16H7.5A3.5 3.5 0 0 0 4 21.5v-16Z"/>
+    <path d="M20 5.5A3.5 3.5 0 0 0 16.5 4H12v16h4.5a3.5 3.5 0 0 1 3.5 1.5v-16Z"/>
+  </symbol>
+  <symbol id="store-icon-leisure" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 4h8v3a4 4 0 0 1-8 0V4Z"/>
+    <path d="M8 6H4v1a4 4 0 0 0 5 4M16 6h4v1a4 4 0 0 1-5 4M12 11v5M8 20h8M9 16h6v4"/>
+  </symbol>
+  <symbol id="store-icon-facility" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 21V5h10v16M14 10h6v11M8 9h2M8 13h2M8 17h2M17 14h1M17 18h1M2 21h20"/>
+  </symbol>
+  <symbol id="store-icon-real-estate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m3 11 9-8 9 8"/>
+    <path d="M5 10v11h14V10M9 21v-7h6v7"/>
+  </symbol>
+  <symbol id="store-icon-health" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 21s-8-4.6-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.4-8 11-8 11Z"/>
+    <path d="M12 8v6M9 11h6"/>
+  </symbol>
+  <symbol id="store-icon-lodging" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 20V8M21 20v-7a3 3 0 0 0-3-3H9v7"/>
+    <path d="M3 17h18M6 10V7h3a3 3 0 0 1 3 3"/>
+  </symbol>
+</svg>
