@@ -4,12 +4,15 @@ import NaverMap from "../components/NaverMap";
 import MapSearch from "../components/MapSearch";
 import CurrentLocation from "../components/CurrentLocation";
 import MarketPolygon from "../components/MarketPolygon";
+import MissionLayer from "../components/MissionLayer";
+import StoreLayer from "../components/StoreLayer";
 
 import "../App.css";
 
 function UserMapPage() {
   const [map, setMap] = useState(null);
   const [markets, setMarkets] = useState([]);
+  const [selectedStore, setSelectedStore] = useState(null);
 
   /*
    * 페이지 로드 시 DB에 저장된 시장 목록 조회
@@ -50,6 +53,9 @@ function UserMapPage() {
           <MarketPolygon key={market.id} map={map} coordinates={coordinates} />
         );
       })}
+
+      <StoreLayer map={map} onStoreSelect={setSelectedStore} />
+      <MissionLayer map={map} selectedStore={selectedStore} />
 
       <MapSearch map={map} />
       <CurrentLocation map={map} />

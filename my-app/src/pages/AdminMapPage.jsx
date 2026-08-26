@@ -5,6 +5,8 @@ import MapSearch from "../components/MapSearch";
 import CurrentLocation from "../components/CurrentLocation";
 import MarketPolygon from "../components/MarketPolygon";
 import PolygonEditor from "../components/PolygonEditor";
+import StoreImportPanel from "../components/StoreImportPanel";
+import StoreLayer from "../components/StoreLayer";
 
 import "../App.css";
 
@@ -25,6 +27,9 @@ function AdminMapPage() {
    * 현재 관리자가 편집 중인 시장 영역 좌표
    */
   const [marketBoundary, setMarketBoundary] = useState([]);
+
+  /* CSV 가져오기 완료 후 점포 레이어 재조회에 사용 */
+  const [storeRefreshKey, setStoreRefreshKey] = useState(0);
 
   /*
    * 페이지 로드 시 DB에 저장된 시장 목록 조회
@@ -76,6 +81,13 @@ function AdminMapPage() {
         coordinates={marketBoundary}
         onNameChange={setMarketName}
         onChange={setMarketBoundary}
+      />
+
+      <StoreLayer map={map} refreshKey={storeRefreshKey} />
+      <StoreImportPanel
+        onImported={() => {
+          setStoreRefreshKey((currentKey) => currentKey + 1);
+        }}
       />
 
       <MapSearch map={map} />
