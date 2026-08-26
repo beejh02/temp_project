@@ -83,7 +83,9 @@ function MapSearch({ map }) {
   /* 도로명 / 지번 주소 검색 */
   const searchAddress = (address) => {
     if (!window.naver?.maps?.Service) {
-      setMessage("Geocoder를 불러오지 못했습니다.");
+      setMessage(
+        "커스텀 지도 스타일에서는 좌표 검색을 이용해주세요.",
+      );
       return;
     }
 
