@@ -23,7 +23,9 @@ function MissionChallengesPage() {
           return (
             <article className="challenge-record" key={challenge.id}>
               <div className="challenge-record__top">
-                <span><MissionIcon type="flag" /></span>
+                <span>
+                  <MissionIcon type="flag" />
+                </span>
                 <span className={`mission-status is-${challenge.status}`}>
                   {MISSION_STATUS_LABEL[challenge.status]}
                 </span>
@@ -41,8 +43,17 @@ function MissionChallengesPage() {
 
               <div className="challenge-visit-days">
                 {challenge.visits.map((visit) => (
-                  <div className={visit.completed ? "is-completed" : ""} key={visit.day}>
-                    <span>{visit.completed ? <MissionIcon type="check" /> : visit.day.slice(0, 1)}</span>
+                  <div
+                    className={visit.completed ? "is-completed" : ""}
+                    key={visit.day}
+                  >
+                    <span>
+                      {visit.completed ? (
+                        <MissionIcon type="check" />
+                      ) : (
+                        visit.day.slice(0, 1)
+                      )}
+                    </span>
                     <strong>{visit.day}</strong>
                     <small>{visit.date}</small>
                   </div>
@@ -51,7 +62,10 @@ function MissionChallengesPage() {
 
               <div className="challenge-record__reward">
                 <span>완주 보상</span>
-                <strong><MissionIcon type="coin" />{challenge.reward.toLocaleString()} NP</strong>
+                <strong>
+                  <MissionIcon type="coin" />
+                  {challenge.reward.toLocaleString()} NP
+                </strong>
               </div>
             </article>
           );
@@ -59,7 +73,10 @@ function MissionChallengesPage() {
 
         <aside className="challenge-tip">
           <MissionIcon type="info" />
-          <p>방문 기록은 하루 한 번만 인정되며, 자정이 지나면 다음 날 기록으로 이어져요.</p>
+          <p>
+            방문 기록은 하루 한 번만 인정되며, 자정이 지나면 다음 날 기록으로
+            이어져요.
+          </p>
         </aside>
       </div>
     </main>

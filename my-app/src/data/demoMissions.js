@@ -70,7 +70,8 @@ export const demoMissions = [
     category: MISSION_CATEGORY.EXPLORATION,
     title: "지정 점포 방문하기",
     description: "오늘 지정된 점포를 찾아 시장 골목을 탐색해보세요.",
-    activationReason: "평소 지나치기 쉬운 점포를 새롭게 발견하도록 돕는 미션이에요.",
+    activationReason:
+      "평소 지나치기 쉬운 점포를 새롭게 발견하도록 돕는 미션이에요.",
     status: MISSION_STATUS.IN_PROGRESS,
     reward: 7,
     target: {
@@ -110,7 +111,8 @@ export const demoMissions = [
     category: MISSION_CATEGORY.VISIT,
     title: "시장 10분 머무르기",
     description: "시장 안을 천천히 둘러보며 10분을 채워보세요.",
-    activationReason: "시장에 머무는 시간이 늘수록 새로운 점포를 만날 가능성도 커져요.",
+    activationReason:
+      "시장에 머무는 시간이 늘수록 새로운 점포를 만날 가능성도 커져요.",
     status: MISSION_STATUS.AVAILABLE,
     reward: 5,
     target: {
@@ -234,9 +236,7 @@ export const demoRankings = {
 };
 
 export function findDemoMission(missionId, missions = demoMissions) {
-  return missions.find(
-    (mission) => String(mission.id) === String(missionId),
-  );
+  return missions.find((mission) => String(mission.id) === String(missionId));
 }
 
 export function isMissionFinished(status) {

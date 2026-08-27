@@ -21,7 +21,9 @@ function MissionGuidePage() {
         <section className="mission-guide-grid">
           {missionCategoryGuides.map((guide) => (
             <article key={guide.id}>
-              <span><MissionIcon type={guide.icon} /></span>
+              <span>
+                <MissionIcon type={guide.icon} />
+              </span>
               <div>
                 <h2>{guide.title}</h2>
                 <p>{guide.description}</p>

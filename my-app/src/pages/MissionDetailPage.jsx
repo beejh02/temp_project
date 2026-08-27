@@ -16,11 +16,7 @@ import "./MissionSubpage.css";
 function MissionDetailPage() {
   const { missionId } = useParams();
   const navigate = useNavigate();
-  const {
-    missions,
-    completeMission,
-    claimMissionReward,
-  } = useMissionDemo();
+  const { missions, completeMission, claimMissionReward } = useMissionDemo();
   const mission = findDemoMission(missionId, missions);
 
   if (!mission) {
@@ -92,7 +88,9 @@ function MissionDetailPage() {
 
         {isClaimed && (
           <section className="reward-result" aria-live="polite">
-            <span><MissionIcon type="check" /></span>
+            <span>
+              <MissionIcon type="check" />
+            </span>
             <div>
               <small>REWARD RECEIVED</small>
               <h2>{mission.reward.toLocaleString()} NP를 받았어요!</h2>
@@ -117,8 +115,8 @@ function MissionDetailPage() {
           </div>
           {mission.availability.remainingSlots != null && (
             <p className="mission-detail-alert">
-              <MissionIcon type="flag" />
-              총 {mission.availability.capacity}명 중 남은 자리 {mission.availability.remainingSlots}개
+              <MissionIcon type="flag" />총 {mission.availability.capacity}명 중
+              남은 자리 {mission.availability.remainingSlots}개
             </p>
           )}
         </section>
@@ -126,19 +124,29 @@ function MissionDetailPage() {
         <section className="mission-detail-card">
           <h3>방문할 곳</h3>
           <div className="mission-target">
-            <span><MissionIcon type="pin" /></span>
+            <span>
+              <MissionIcon type="pin" />
+            </span>
             <div>
               <strong>{mission.target.name}</strong>
               <small>{mission.target.address}</small>
             </div>
-            <button type="button" onClick={handleMapClick}>지도 보기</button>
+            <button type="button" onClick={handleMapClick}>
+              지도 보기
+            </button>
           </div>
         </section>
 
         <section className="mission-detail-card mission-detail-info">
           <h3>완료 방법</h3>
-          <p><MissionIcon type="check" />{mission.verificationLabel}</p>
-          <p><MissionIcon type="clock" />{mission.availability.endsAtLabel}</p>
+          <p>
+            <MissionIcon type="check" />
+            {mission.verificationLabel}
+          </p>
+          <p>
+            <MissionIcon type="clock" />
+            {mission.availability.endsAtLabel}
+          </p>
         </section>
 
         <aside className="mission-impact-note">

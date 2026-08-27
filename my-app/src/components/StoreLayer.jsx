@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  getDominantStoreCategory,
-  getStoreCategory,
-} from "./storeCategories";
+import { getDominantStoreCategory, getStoreCategory } from "./storeCategories";
 import "./StoreLayer.css";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -60,10 +57,7 @@ function createStoreOverlayElement({
 
   pin.className = "store-map-overlay__pin";
   pin.appendChild(
-    createSvgIcon(
-      dominantCategory.iconId,
-      "store-map-overlay__pin-icon",
-    ),
+    createSvgIcon(dominantCategory.iconId, "store-map-overlay__pin-icon"),
   );
   pinButton.appendChild(pin);
 
@@ -161,9 +155,7 @@ function createStoreOverlay(map, group, element) {
       return;
     }
 
-    const pixelPosition = this.getProjection().fromCoordToOffset(
-      this.position,
-    );
+    const pixelPosition = this.getProjection().fromCoordToOffset(this.position);
 
     this.element.style.left = `${pixelPosition.x}px`;
     this.element.style.top = `${pixelPosition.y}px`;
@@ -201,14 +193,7 @@ function StoreLocationMarker({
     return () => {
       overlay.setMap(null);
     };
-  }, [
-    map,
-    group,
-    selected,
-    selectedStoreId,
-    onToggle,
-    onStoreSelect,
-  ]);
+  }, [map, group, selected, selectedStoreId, onToggle, onStoreSelect]);
 
   return null;
 }
@@ -241,8 +226,7 @@ function clusterStores(stores, map, mapRevision) {
       const verticalDistance = group.pixelY - pixel.y;
 
       return (
-        Math.hypot(horizontalDistance, verticalDistance)
-        < minimumMarkerDistance
+        Math.hypot(horizontalDistance, verticalDistance) < minimumMarkerDistance
       );
     });
 
@@ -258,20 +242,16 @@ function clusterStores(stores, map, mapRevision) {
     }
 
     const nextCount = nearbyGroup.stores.length + 1;
-    nearbyGroup.pixelX
-      = (nearbyGroup.pixelX * nearbyGroup.stores.length + pixel.x) / nextCount;
-    nearbyGroup.pixelY
-      = (nearbyGroup.pixelY * nearbyGroup.stores.length + pixel.y) / nextCount;
-    nearbyGroup.latitude
-      = (
-        nearbyGroup.latitude * nearbyGroup.stores.length
-        + store.latitude
-      ) / nextCount;
-    nearbyGroup.longitude
-      = (
-        nearbyGroup.longitude * nearbyGroup.stores.length
-        + store.longitude
-      ) / nextCount;
+    nearbyGroup.pixelX =
+      (nearbyGroup.pixelX * nearbyGroup.stores.length + pixel.x) / nextCount;
+    nearbyGroup.pixelY =
+      (nearbyGroup.pixelY * nearbyGroup.stores.length + pixel.y) / nextCount;
+    nearbyGroup.latitude =
+      (nearbyGroup.latitude * nearbyGroup.stores.length + store.latitude) /
+      nextCount;
+    nearbyGroup.longitude =
+      (nearbyGroup.longitude * nearbyGroup.stores.length + store.longitude) /
+      nextCount;
     nearbyGroup.stores.push(store);
   });
 

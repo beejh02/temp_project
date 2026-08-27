@@ -5,4 +5,5 @@ public record StoreImportResult(
         int upsertedRows,
         int skippedRows
         ) {
+
 }

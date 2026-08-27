@@ -19,7 +19,11 @@ function MissionRankingsPage() {
           description="미션으로 획득한 포인트를 기준으로 집계해요."
         />
 
-        <div className="ranking-tabs" role="tablist" aria-label="순위 집계 기간">
+        <div
+          className="ranking-tabs"
+          role="tablist"
+          aria-label="순위 집계 기간"
+        >
           {Object.entries(demoRankings).map(([key, item]) => (
             <button
               key={key}
@@ -56,20 +60,28 @@ function MissionRankingsPage() {
 
           <ol>
             {ranking.leaders.map((entry) => (
-              <li key={entry.rank} className={entry.rank <= 3 ? `is-top-${entry.rank}` : ""}>
+              <li
+                key={entry.rank}
+                className={entry.rank <= 3 ? `is-top-${entry.rank}` : ""}
+              >
                 <span className="ranking-position">
                   {entry.rank <= 3 ? <MissionIcon type="trophy" /> : entry.rank}
                 </span>
-                <div className="ranking-avatar">{entry.nickname.slice(0, 1)}</div>
+                <div className="ranking-avatar">
+                  {entry.nickname.slice(0, 1)}
+                </div>
                 <strong>{entry.nickname}</strong>
-                <span className="ranking-points">{entry.points.toLocaleString()} NP</span>
+                <span className="ranking-points">
+                  {entry.points.toLocaleString()} NP
+                </span>
               </li>
             ))}
           </ol>
         </section>
 
         <aside className="ranking-note">
-          포인트를 사용해도 집계 기간에 획득한 참여 포인트는 순위에 그대로 반영돼요.
+          포인트를 사용해도 집계 기간에 획득한 참여 포인트는 순위에 그대로
+          반영돼요.
         </aside>
       </div>
     </main>

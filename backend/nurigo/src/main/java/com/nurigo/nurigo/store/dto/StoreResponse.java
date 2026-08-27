@@ -15,4 +15,5 @@ public record StoreResponse(
         double latitude,
         double longitude
         ) {
+
 }

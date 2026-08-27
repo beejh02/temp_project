@@ -27,7 +27,9 @@ function StoreImportPanel({ onImported }) {
 
       if (!response.ok) {
         const problem = await response.json().catch(() => null);
-        throw new Error(problem?.detail || `점포 가져오기 실패: ${response.status}`);
+        throw new Error(
+          problem?.detail || `점포 가져오기 실패: ${response.status}`,
+        );
       }
 
       const result = await response.json();

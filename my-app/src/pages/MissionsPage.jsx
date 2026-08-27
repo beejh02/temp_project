@@ -23,14 +23,18 @@ function MissionsPage() {
     isMissionFinished(mission.status),
   ).length;
   const totalMissionCount = missions.length;
-  const progress = totalMissionCount === 0
-    ? 0
-    : (completedMissionCount / totalMissionCount) * 100;
+  const progress =
+    totalMissionCount === 0
+      ? 0
+      : (completedMissionCount / totalMissionCount) * 100;
 
   return (
     <main className="missions-page">
       <div className="missions-content">
-        <section className="mission-summary" aria-labelledby="today-mission-title">
+        <section
+          className="mission-summary"
+          aria-labelledby="today-mission-title"
+        >
           <div className="mission-summary-header">
             <div>
               <span className="summary-label">TODAY</span>
@@ -114,7 +118,9 @@ function MissionCard({ mission, special = false }) {
         "mission-card",
         special ? "special-card" : "",
         isClaimed ? "completed-card" : "",
-      ].filter(Boolean).join(" ")}
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div className="mission-card-header">
         <span className="mission-category">

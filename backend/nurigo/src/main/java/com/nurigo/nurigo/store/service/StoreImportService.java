@@ -339,11 +339,9 @@ public class StoreImportService {
             char character = record.charAt(index);
 
             if (character == '"') {
-                if (
-                    inQuotes
-                    && index + 1 < record.length()
-                    && record.charAt(index + 1) == '"'
-                ) {
+                if (inQuotes
+                        && index + 1 < record.length()
+                        && record.charAt(index + 1) == '"') {
                     value.append('"');
                     index++;
                 } else {
@@ -380,11 +378,9 @@ public class StoreImportService {
                 continue;
             }
 
-            if (
-                inQuotes
-                && index + 1 < record.length()
-                && record.charAt(index + 1) == '"'
-            ) {
+            if (inQuotes
+                    && index + 1 < record.length()
+                    && record.charAt(index + 1) == '"') {
                 index++;
                 continue;
             }
@@ -409,5 +405,6 @@ public class StoreImportService {
             double longitude,
             double latitude
             ) {
+
     }
 }
