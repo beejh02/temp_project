@@ -1,63 +1,54 @@
+import { Link } from "react-router-dom";
+
+import {
+  isMissionFinished,
+  MISSION_CATEGORY_LABEL,
+  MISSION_GROUP,
+  MISSION_STATUS,
+  MISSION_STATUS_LABEL,
+} from "../data/demoMissions";
+import useMissionDemo from "../hooks/useMissionDemo";
+
 import "./MissionsPage.css";
 
-const dailyMissions = [
-  {
-    id: 1,
-    category: "방문형",
-    title: "오늘 중앙시장 최초 방문하기",
-    status: "completed",
-    statusText: "보상 수령 완료",
-    reward: 5,
-  },
-  {
-    id: 2,
-    category: "탐색형",
-    title: "지정 점포 방문하기",
-    status: "progress",
-    statusText: "진행중",
-    reward: 7,
-  },
-];
-const specialMissions = [
-  {
-    id: 3,
-    category: "도전형",
-    title: "3일 연속 시장 방문",
-    status: "progress",
-    statusText: "진행중",
-    progressText: "2 / 3",
-    reward: 5,
-  },
-];
-
-function MissionsPage({ onMissionSelect, onRankingClick }) {
-  const completedMissionCount = 1;
-  const totalMissionCount = 4;
-  const progress = (completedMissionCount / totalMissionCount) * 100;
-  const handleMissionClick = (mission) => {
-    if (onMissionSelect) {
-      onMissionSelect(mission);
-      return;
-    }
-    console.log("선택한 미션:", mission);
-  };
+function MissionsPage() {
+  const { missions } = useMissionDemo();
+  const dailyMissions = missions.filter(
+    (mission) => mission.group === MISSION_GROUP.DAILY,
+  );
+  const specialMissions = missions.filter(
+    (mission) => mission.group === MISSION_GROUP.SPECIAL,
+  );
+  const completedMissionCount = missions.filter((mission) =>
+    isMissionFinished(mission.status),
+  ).length;
+  const totalMissionCount = missions.length;
+  const progress = totalMissionCount === 0
+    ? 0
+    : (completedMissionCount / totalMissionCount) * 100;
 
   return (
     <main className="missions-page">
       <div className="missions-content">
-        {/* 오늘의 미션 진행 상황 */}
-        <section className="mission-summary">
+        <section className="mission-summary" aria-labelledby="today-mission-title">
           <div className="mission-summary-header">
             <div>
               <span className="summary-label">TODAY</span>
-              <h1>오늘의 미션</h1>
+              <h1 id="today-mission-title">오늘의 미션</h1>
             </div>
             <strong className="summary-count">
               {completedMissionCount}/{totalMissionCount}
             </strong>
           </div>
 
-          <div className="mission-summary-progress">
+          <div
+            className="mission-summary-progress"
+            role="progressbar"
+            aria-label="오늘의 미션 완료율"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={Math.round(progress)}
+          >
             <div
               className="mission-summary-progress-bar"
               style={{ width: `${progress}%` }}
@@ -69,98 +60,95 @@ function MissionsPage({ onMissionSelect, onRankingClick }) {
           </p>
         </section>
 
-        {/* 랭킹 */}
         <div className="ranking-row">
-          <button
-            type="button"
-            className="ranking-button"
-            onClick={onRankingClick}
-          >
+          <Link className="ranking-button" to="/missions/rankings">
             랭킹 보기
             <span>→</span>
-          </button>
+          </Link>
         </div>
 
-        {/* Daily Mission */}
-        <section className="missions-section">
-          <div className="section-title">
-            <div>
-              <span className="section-subtitle">DAILY</span>
-              <h2>Daily Mission</h2>
-            </div>
+        <MissionSection
+          eyebrow="DAILY"
+          title="Daily Mission"
+          missions={dailyMissions}
+        />
 
-            <span className="section-count">{dailyMissions.length}</span>
-          </div>
-
-          <div className="mission-list">
-            {dailyMissions.map((mission) => (
-              <MissionCard
-                key={mission.id}
-                mission={mission}
-                onClick={() => handleMissionClick(mission)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* Special Mission */}
-        <section className="missions-section">
-          <div className="section-title">
-            <div>
-              <span className="section-subtitle">SPECIAL</span>
-              <h2>Special Mission</h2>
-            </div>
-          </div>
-          <div className="mission-list">
-            {specialMissions.map((mission) => (
-              <MissionCard
-                key={mission.id}
-                mission={mission}
-                special
-                onClick={() => handleMissionClick(mission)}
-              />
-            ))}
-          </div>
-        </section>
+        <MissionSection
+          eyebrow="SPECIAL"
+          title="Special Mission"
+          missions={specialMissions}
+          special
+        />
       </div>
     </main>
   );
 }
 
-function MissionCard({ mission, special = false, onClick }) {
-  const isCompleted = mission.status === "completed";
+function MissionSection({ eyebrow, title, missions, special = false }) {
+  return (
+    <section className="missions-section">
+      <div className="section-title">
+        <div>
+          <span className="section-subtitle">{eyebrow}</span>
+          <h2>{title}</h2>
+        </div>
+        <span className="section-count">{missions.length}</span>
+      </div>
+
+      <div className="mission-list">
+        {missions.map((mission) => (
+          <MissionCard key={mission.id} mission={mission} special={special} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MissionCard({ mission, special = false }) {
+  const isClaimed = mission.status === MISSION_STATUS.CLAIMED;
+  const statusClassName = getStatusClassName(mission.status);
+
   return (
     <article
       className={[
         "mission-card",
         special ? "special-card" : "",
-        isCompleted ? "completed-card" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+        isClaimed ? "completed-card" : "",
+      ].filter(Boolean).join(" ")}
     >
       <div className="mission-card-header">
-        <span className="mission-category">{mission.category}</span>
-        <span className={`mission-status ${mission.status}`}>
-          {mission.statusText}
-          {mission.progressText && <span> {mission.progressText}</span>}
+        <span className="mission-category">
+          {MISSION_CATEGORY_LABEL[mission.category]}
+        </span>
+        <span className={`mission-status ${statusClassName}`}>
+          {MISSION_STATUS_LABEL[mission.status]}
+          {mission.id === 3 && <span> {mission.progress.label}</span>}
         </span>
       </div>
 
       <h3>{mission.title}</h3>
+
       <div className="mission-card-footer">
         <span className="mission-reward">+ {mission.reward} NP</span>
-        <button
-          type="button"
-          className="mission-detail-button"
-          onClick={onClick}
-        >
+        <Link className="mission-detail-button" to={`/missions/${mission.id}`}>
           상세보기
           <span>→</span>
-        </button>
+        </Link>
       </div>
     </article>
   );
+}
+
+function getStatusClassName(status) {
+  if (status === MISSION_STATUS.IN_PROGRESS) {
+    return "progress";
+  }
+
+  if ([MISSION_STATUS.COMPLETED, MISSION_STATUS.CLAIMED].includes(status)) {
+    return "completed";
+  }
+
+  return status;
 }
 
 export default MissionsPage;

@@ -93,6 +93,7 @@
   font-weight: 600;
   color: #444444;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .ranking-button span {
@@ -279,6 +280,7 @@
   font-weight: 500;
   color: #555555;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .mission-detail-button span {
