@@ -7,14 +7,13 @@ function MapDataStatus({
   storeCount,
   onRetry,
 }) {
-  const isLoading =
-    marketStatus === "loading" || storeStatus === "loading";
+  const isLoading = marketStatus === "loading" || storeStatus === "loading";
   const hasError = marketStatus === "error" || storeStatus === "error";
   const isEmpty =
-    marketStatus === "success"
-    && storeStatus === "success"
-    && marketCount === 0
-    && storeCount === 0;
+    marketStatus === "success" &&
+    storeStatus === "success" &&
+    marketCount === 0 &&
+    storeCount === 0;
 
   if (!isLoading && !hasError && !isEmpty) {
     return null;
