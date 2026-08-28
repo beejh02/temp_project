@@ -139,4 +139,33 @@ public final class MissionDefinition {
     public boolean isShared() {
         return shared;
     }
+
+    public MissionDefinition withTarget(
+            Long resolvedTargetId,
+            String resolvedTargetName,
+            double resolvedTargetLatitude,
+            double resolvedTargetLongitude
+    ) {
+        return new MissionDefinition(
+                id,
+                missionKey,
+                missionGroup,
+                category,
+                title,
+                description,
+                activationReason,
+                rewardPoints,
+                targetType,
+                resolvedTargetId,
+                resolvedTargetName,
+                targetAddress,
+                resolvedTargetLatitude,
+                resolvedTargetLongitude,
+                verificationLabel,
+                progressTarget,
+                capacity,
+                displayOrder,
+                shared
+        );
+    }
 }

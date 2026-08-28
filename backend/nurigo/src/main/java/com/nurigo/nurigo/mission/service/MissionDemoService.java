@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.nurigo.nurigo.mission.config.DemoMissionCatalog;
+import com.nurigo.nurigo.mission.config.MissionRunCatalog;
 import com.nurigo.nurigo.mission.dto.MissionResponse;
 import com.nurigo.nurigo.mission.dto.MissionLocationRequest;
 import com.nurigo.nurigo.mission.dto.RankingResponse;
@@ -26,7 +26,7 @@ import com.nurigo.nurigo.store.service.StoreService;
 @Service
 public class MissionDemoService {
 
-    private final DemoMissionCatalog missionCatalog;
+    private final MissionRunCatalog missionCatalog;
     private final DailyMissionPolicy dailyMissionPolicy;
     private final MissionLocationPolicy missionLocationPolicy;
     private final MissionRunStateStore runStateStore;
@@ -34,7 +34,7 @@ public class MissionDemoService {
     private final StoreService storeService;
 
     public MissionDemoService(
-            DemoMissionCatalog missionCatalog,
+            MissionRunCatalog missionCatalog,
             DailyMissionPolicy dailyMissionPolicy,
             MissionLocationPolicy missionLocationPolicy,
             MissionRunStateStore runStateStore,

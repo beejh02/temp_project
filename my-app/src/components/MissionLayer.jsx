@@ -56,6 +56,19 @@ function getMarketCenter(market) {
   };
 }
 
+function getMarketRepresentativeLocation(market) {
+  const { latitude, longitude } = market?.location ?? {};
+
+  if (!isFiniteCoordinate(latitude) || !isFiniteCoordinate(longitude)) {
+    return null;
+  }
+
+  return {
+    latitude: Number(latitude),
+    longitude: Number(longitude),
+  };
+}
+
 function getFallbackLocation(target) {
   const { latitude, longitude } = target.location ?? {};
 
@@ -105,7 +118,10 @@ function resolveMissionTarget(mission, stores, markets) {
     const market = markets.find(
       ({ id }) => String(id) === String(target.marketId),
     );
-    const location = getMarketCenter(market) || getFallbackLocation(target);
+    const location =
+      getMarketRepresentativeLocation(market)
+      || getFallbackLocation(target)
+      || getMarketCenter(market);
 
     if (!location) {
       return null;
