@@ -1,26 +1,49 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import NaverMap from "../components/NaverMap";
 import MapSearch from "../components/MapSearch";
 import CurrentLocation from "../components/CurrentLocation";
+import MapDataStatus from "../components/MapDataStatus";
 import MarketPolygon from "../components/MarketPolygon";
 import MissionLayer from "../components/MissionLayer";
 import StoreLayer from "../components/StoreLayer";
+import { MISSION_TARGET_TYPE } from "../data/demoMissions";
+import useMissionDemo from "../hooks/useMissionDemo";
 
 import "../App.css";
 
 function UserMapPage() {
   const [map, setMap] = useState(null);
   const [markets, setMarkets] = useState([]);
-  const [selectedStore, setSelectedStore] = useState(null);
+  const [stores, setStores] = useState([]);
+  const [marketLoadStatus, setMarketLoadStatus] = useState("loading");
+  const [storeLoadStatus, setStoreLoadStatus] = useState("loading");
+  const [dataRefreshKey, setDataRefreshKey] = useState(0);
+  const [searchParams] = useSearchParams();
+  const { missions } = useMissionDemo();
+  const focusedMissionId = searchParams.get("missionId");
+  const missionStoreIds = useMemo(
+    () =>
+      missions
+        .filter(({ target }) => target.type === MISSION_TARGET_TYPE.STORE)
+        .map(({ target }) => target.storeId),
+    [missions],
+  );
 
   /*
    * 페이지 로드 시 DB에 저장된 시장 목록 조회
    */
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchMarkets = async () => {
+      setMarketLoadStatus("loading");
+
       try {
-        const response = await fetch("/api/markets");
+        const response = await fetch("/api/markets", {
+          signal: abortController.signal,
+        });
 
         if (!response.ok) {
           throw new Error(`시장 조회 실패: ${response.status}`);
@@ -28,14 +51,26 @@ function UserMapPage() {
 
         const data = await response.json();
 
+        if (!Array.isArray(data)) {
+          throw new Error("시장 조회 응답 형식이 올바르지 않습니다.");
+        }
+
         setMarkets(data);
+        setMarketLoadStatus("success");
       } catch (error) {
-        console.error("시장 조회 중 오류:", error);
+        if (error.name !== "AbortError") {
+          console.error("시장 조회 중 오류:", error);
+          setMarketLoadStatus("error");
+        }
       }
     };
 
     fetchMarkets();
-  }, []);
+
+    return () => {
+      abortController.abort();
+    };
+  }, [dataRefreshKey]);
 
   return (
     <div className="app">
@@ -54,8 +89,28 @@ function UserMapPage() {
         );
       })}
 
-      <StoreLayer map={map} onStoreSelect={setSelectedStore} />
-      <MissionLayer map={map} selectedStore={selectedStore} />
+      <StoreLayer
+        map={map}
+        refreshKey={dataRefreshKey}
+        excludedStoreIds={missionStoreIds}
+        onStoresLoad={setStores}
+        onLoadStateChange={setStoreLoadStatus}
+      />
+      <MissionLayer
+        map={map}
+        markets={markets}
+        stores={stores}
+        missions={missions}
+        focusedMissionId={focusedMissionId}
+      />
+
+      <MapDataStatus
+        marketStatus={marketLoadStatus}
+        storeStatus={storeLoadStatus}
+        marketCount={markets.length}
+        storeCount={stores.length}
+        onRetry={() => setDataRefreshKey((currentKey) => currentKey + 1)}
+      />
 
       <MapSearch map={map} />
       <CurrentLocation map={map} />

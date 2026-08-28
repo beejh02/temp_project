@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getDominantStoreCategory, getStoreCategory } from "./storeCategories";
+import { getDominantStoreCategory } from "./storeCategories";
 import "./StoreLayer.css";
 
+const MAP_INTERACTION_EVENTS = ["pointerdown", "mousedown", "touchstart"];
+const CATEGORY_MARKER_THRESHOLD = 20;
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const XLINK_NAMESPACE = "http://www.w3.org/1999/xlink";
 
@@ -23,6 +25,12 @@ function createSvgIcon(iconId, className) {
   return svg;
 }
 
+function stopMapInteractionEvents(element) {
+  MAP_INTERACTION_EVENTS.forEach((eventName) => {
+    element.addEventListener(eventName, (event) => event.stopPropagation());
+  });
+}
+
 function createStoreOverlayElement({
   group,
   selected,
@@ -31,11 +39,19 @@ function createStoreOverlayElement({
   onStoreSelect,
 }) {
   const dominantCategory = getDominantStoreCategory(group.stores);
+  const usesCategoryMarker =
+    group.stores.length >= CATEGORY_MARKER_THRESHOLD;
   const root = document.createElement("div");
   const pinButton = document.createElement("button");
   const pin = document.createElement("span");
 
-  root.className = `store-map-overlay${selected ? " is-selected" : ""}`;
+  root.className = [
+    "store-map-overlay",
+    usesCategoryMarker ? "is-category-cluster" : "is-point",
+    selected ? "is-selected" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   root.style.setProperty("--store-marker-color", dominantCategory.color);
   root.style.zIndex = selected ? "2000" : "100";
 
@@ -56,13 +72,19 @@ function createStoreOverlayElement({
   });
 
   pin.className = "store-map-overlay__pin";
-  pin.appendChild(
-    createSvgIcon(dominantCategory.iconId, "store-map-overlay__pin-icon"),
-  );
+  pin.setAttribute("aria-hidden", "true");
+
+  if (usesCategoryMarker) {
+    pin.appendChild(
+      createSvgIcon(dominantCategory.iconId, "store-map-overlay__pin-icon"),
+    );
+  }
+
   pinButton.appendChild(pin);
 
-  if (group.stores.length > 1) {
+  if (usesCategoryMarker) {
     const countBadge = document.createElement("span");
+
     countBadge.className = "store-map-overlay__count";
     countBadge.textContent = String(group.stores.length);
     pinButton.appendChild(countBadge);
@@ -72,23 +94,38 @@ function createStoreOverlayElement({
 
   if (selected) {
     const details = document.createElement("div");
-    const heading = document.createElement("div");
-    const storeList = document.createElement("div");
 
     details.className = "store-map-overlay__details";
     details.addEventListener("click", (event) => event.stopPropagation());
+
+    if (group.stores.length === 1) {
+      const [store] = group.stores;
+      const summary = document.createElement("div");
+      const name = document.createElement("strong");
+      const categoryName = document.createElement("small");
+
+      details.classList.add("is-single");
+      summary.className = "store-map-overlay__summary";
+      name.textContent = store.name;
+      categoryName.textContent = store.majorCategoryName || "기타";
+      summary.append(name, categoryName);
+      details.appendChild(summary);
+      root.appendChild(details);
+
+      stopMapInteractionEvents(root);
+
+      return root;
+    }
+
+    const heading = document.createElement("div");
+    const storeList = document.createElement("div");
+
     heading.className = "store-map-overlay__heading";
-    heading.textContent =
-      group.stores.length === 1
-        ? "점포 정보"
-        : `주변 점포 ${group.stores.length}개`;
+    heading.textContent = `주변 점포 ${group.stores.length}개`;
     storeList.className = "store-map-overlay__list";
 
     group.stores.forEach((store) => {
-      const category = getStoreCategory(store.majorCategoryCode);
       const storeButton = document.createElement("button");
-      const iconWrap = document.createElement("span");
-      const textWrap = document.createElement("span");
       const name = document.createElement("strong");
       const categoryName = document.createElement("small");
 
@@ -104,17 +141,9 @@ function createStoreOverlayElement({
         onStoreSelect(store);
       });
 
-      iconWrap.className = "store-map-overlay__store-icon";
-      iconWrap.style.color = category.color;
-      iconWrap.appendChild(
-        createSvgIcon(category.iconId, "store-map-overlay__store-svg"),
-      );
-
-      textWrap.className = "store-map-overlay__store-text";
       name.textContent = store.name;
-      categoryName.textContent = store.majorCategoryName;
-      textWrap.append(name, categoryName);
-      storeButton.append(iconWrap, textWrap);
+      categoryName.textContent = store.majorCategoryName || "기타";
+      storeButton.append(name, categoryName);
       storeList.appendChild(storeButton);
     });
 
@@ -122,9 +151,7 @@ function createStoreOverlayElement({
     root.appendChild(details);
   }
 
-  ["pointerdown", "mousedown", "touchstart"].forEach((eventName) => {
-    root.addEventListener(eventName, (event) => event.stopPropagation());
-  });
+  stopMapInteractionEvents(root);
 
   return root;
 }
@@ -269,7 +296,14 @@ function clusterStores(stores, map, mapRevision) {
   });
 }
 
-function StoreLayer({ map, refreshKey = 0, onStoreSelect }) {
+function StoreLayer({
+  map,
+  refreshKey = 0,
+  excludedStoreIds = [],
+  onStoresLoad,
+  onLoadStateChange,
+  onStoreSelect,
+}) {
   const [stores, setStores] = useState([]);
   const [selectedLocationKey, setSelectedLocationKey] = useState(null);
   const [selectedStoreId, setSelectedStoreId] = useState(null);
@@ -279,6 +313,8 @@ function StoreLayer({ map, refreshKey = 0, onStoreSelect }) {
     const abortController = new AbortController();
 
     const fetchStores = async () => {
+      onLoadStateChange?.("loading");
+
       try {
         const response = await fetch("/api/stores/in-markets", {
           signal: abortController.signal,
@@ -289,10 +325,18 @@ function StoreLayer({ map, refreshKey = 0, onStoreSelect }) {
         }
 
         const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("점포 조회 응답 형식이 올바르지 않습니다.");
+        }
+
         setStores(data);
+        onStoresLoad?.(data);
+        onLoadStateChange?.("success");
       } catch (error) {
         if (error.name !== "AbortError") {
           console.error("Polygon 내부 점포 조회 중 오류:", error);
+          onLoadStateChange?.("error");
         }
       }
     };
@@ -302,7 +346,7 @@ function StoreLayer({ map, refreshKey = 0, onStoreSelect }) {
     return () => {
       abortController.abort();
     };
-  }, [refreshKey]);
+  }, [refreshKey, onStoresLoad, onLoadStateChange]);
 
   useEffect(() => {
     if (!map || !window.naver?.maps) {
@@ -323,9 +367,17 @@ function StoreLayer({ map, refreshKey = 0, onStoreSelect }) {
     };
   }, [map]);
 
+  const excludedStoreIdSet = useMemo(
+    () => new Set(excludedStoreIds.map(String)),
+    [excludedStoreIds],
+  );
+  const visibleStores = useMemo(
+    () => stores.filter((store) => !excludedStoreIdSet.has(String(store.id))),
+    [stores, excludedStoreIdSet],
+  );
   const storeGroups = useMemo(
-    () => clusterStores(stores, map, mapRevision),
-    [stores, map, mapRevision],
+    () => clusterStores(visibleStores, map, mapRevision),
+    [visibleStores, map, mapRevision],
   );
 
   const handleToggle = useCallback((locationKey) => {
