@@ -9,14 +9,18 @@ import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nurigo.nurigo.mission.dto.MissionResponse;
+import com.nurigo.nurigo.mission.dto.MissionLocationRequest;
 import com.nurigo.nurigo.mission.dto.RankingResponse;
 import com.nurigo.nurigo.mission.service.MissionDemoService;
 import com.nurigo.nurigo.mission.service.MissionSessionResult;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/missions")
@@ -43,16 +47,16 @@ public class MissionController {
         );
     }
 
-    @PostMapping("/{missionId}/complete")
-    public ResponseEntity<MissionResponse> completeMission(
+    @PostMapping("/location")
+    public ResponseEntity<List<MissionResponse>> recordLocation(
             @CookieValue(
                     name = SESSION_COOKIE_NAME,
                     required = false
             ) String sessionId,
-            @PathVariable Long missionId
+            @Valid @RequestBody MissionLocationRequest request
     ) {
         return response(
-                missionDemoService.completeMission(sessionId, missionId)
+                missionDemoService.recordLocation(sessionId, request)
         );
     }
 

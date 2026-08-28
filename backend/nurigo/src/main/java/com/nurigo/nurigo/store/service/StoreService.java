@@ -26,6 +26,21 @@ public class StoreService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<StoreResponse> findStoresNearLocation(
+            double latitude,
+            double longitude,
+            double radiusMeters
+    ) {
+        return storeRepository.findStoresNearLocation(
+                latitude,
+                longitude,
+                radiusMeters
+        ).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private StoreResponse toResponse(Store store) {
         return new StoreResponse(
                 store.getId(),

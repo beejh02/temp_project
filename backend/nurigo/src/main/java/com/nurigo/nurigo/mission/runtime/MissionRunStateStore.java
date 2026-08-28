@@ -1,9 +1,12 @@
 package com.nurigo.nurigo.mission.runtime;
 
 import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -180,7 +183,7 @@ public class MissionRunStateStore {
 
         if (sharedState.current >= sharedState.target) {
             participantState.status = MissionStatus.CLOSED;
-            throw new IllegalStateException("공동 미션이 이미 마감됐습니다.");
+            return getMissionState(sessionId, definition);
         }
 
         if (sharedState.completedSessionIds.add(sessionId)) {
@@ -218,6 +221,94 @@ public class MissionRunStateStore {
         RankingScore rankingScore = rankingScores.get(sessionId);
         rankingScore.weeklyPoints += definition.getRewardPoints();
         rankingScore.monthlyPoints += definition.getRewardPoints();
+
+        return getMissionState(sessionId, definition);
+    }
+
+    public synchronized MissionStateSnapshot recordMarketPresence(
+            String sessionId,
+            MissionDefinition definition,
+            Instant recordedAt
+    ) {
+        ParticipantSession session = requireSession(sessionId);
+        ParticipantMissionState participantState
+                = requireAssignedMission(session, definition);
+
+        if (participantState.status == MissionStatus.COMPLETED
+                || participantState.status == MissionStatus.CLAIMED) {
+            return getMissionState(sessionId, definition);
+        }
+
+        if (definition.isShared()
+                || definition.getProgressTarget() == 1) {
+            return completeMission(sessionId, definition);
+        }
+
+        if (definition.getProgressTarget() != 600) {
+            return getMissionState(sessionId, definition);
+        }
+
+        if (participantState.lastMarketObservationAt != null) {
+            long elapsedSeconds = Duration.between(
+                    participantState.lastMarketObservationAt,
+                    recordedAt
+            ).getSeconds();
+
+            if (elapsedSeconds <= 0) {
+                return getMissionState(sessionId, definition);
+            }
+
+            participantState.current = Math.min(
+                    definition.getProgressTarget(),
+                    participantState.current
+                    + (int) Math.min(elapsedSeconds, 30)
+            );
+        }
+
+        participantState.lastMarketObservationAt = recordedAt;
+        participantState.status
+                = participantState.current >= definition.getProgressTarget()
+                        ? MissionStatus.COMPLETED
+                        : MissionStatus.IN_PROGRESS;
+
+        return getMissionState(sessionId, definition);
+    }
+
+    public synchronized void recordMarketExit(
+            String sessionId,
+            MissionDefinition definition
+    ) {
+        ParticipantSession session = requireSession(sessionId);
+        ParticipantMissionState participantState
+                = requireAssignedMission(session, definition);
+        participantState.lastMarketObservationAt = null;
+    }
+
+    public synchronized MissionStateSnapshot recordNearbyStores(
+            String sessionId,
+            MissionDefinition definition,
+            Collection<Long> storeIds
+    ) {
+        ParticipantSession session = requireSession(sessionId);
+        ParticipantMissionState participantState
+                = requireAssignedMission(session, definition);
+
+        if (participantState.status == MissionStatus.COMPLETED
+                || participantState.status == MissionStatus.CLAIMED) {
+            return getMissionState(sessionId, definition);
+        }
+
+        participantState.visitedStoreIds.addAll(storeIds);
+        participantState.current = Math.min(
+                definition.getProgressTarget(),
+                participantState.visitedStoreIds.size()
+        );
+
+        if (participantState.current >= definition.getProgressTarget()) {
+            participantState.status = MissionStatus.COMPLETED;
+        } else if (participantState.current > 0) {
+            participantState.status = MissionStatus.IN_PROGRESS;
+        }
 
         return getMissionState(sessionId, definition);
     }
@@ -451,6 +542,8 @@ public class MissionRunStateStore {
 
         private MissionStatus status = MissionStatus.AVAILABLE;
         private int current;
+        private Instant lastMarketObservationAt;
+        private final Set<Long> visitedStoreIds = new LinkedHashSet<>();
     }
 
     private static final class SharedMissionState {
