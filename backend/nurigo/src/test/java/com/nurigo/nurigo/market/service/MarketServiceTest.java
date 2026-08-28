@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,5 +69,18 @@ class MarketServiceTest {
                                 -> market.id().equals(savedMarket.getId())
                         )
         );
+
+        MarketResponse response = markets.stream()
+                .filter(market -> market.id().equals(savedMarket.getId()))
+                .findFirst()
+                .orElseThrow();
+        Point representativePoint = savedMarket.getBoundary()
+                .getFactory()
+                .createPoint(new Coordinate(
+                        response.location().longitude(),
+                        response.location().latitude()
+                ));
+
+        assertTrue(savedMarket.getBoundary().covers(representativePoint));
     }
 }

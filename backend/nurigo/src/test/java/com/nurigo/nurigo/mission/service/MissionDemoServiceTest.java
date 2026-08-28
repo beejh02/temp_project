@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import com.nurigo.nurigo.market.dto.MarketResponse;
 import com.nurigo.nurigo.market.service.MarketService;
 import com.nurigo.nurigo.mission.config.DemoMissionCatalog;
+import com.nurigo.nurigo.mission.config.MissionRunCatalog;
 import com.nurigo.nurigo.mission.dto.MissionLocationRequest;
 import com.nurigo.nurigo.mission.dto.MissionResponse;
 import com.nurigo.nurigo.mission.dto.RankingResponse;
@@ -87,17 +88,42 @@ class MissionDemoServiceTest {
         );
     }
 
+    @Test
+    void 시장_미션은_DB의_실제_ID와_Polygon_대표_좌표를_사용한다() {
+        MissionDemoService service = createService();
+        List<MissionResponse> marketMissions = service.getDailyMissions(null)
+                .data()
+                .stream()
+                .filter(mission -> mission.target().type().equals("market"))
+                .toList();
+
+        assertFalse(marketMissions.isEmpty());
+        assertTrue(marketMissions.stream().allMatch(mission ->
+                mission.target().marketId().equals(77L)
+        ));
+        assertTrue(marketMissions.stream().allMatch(mission ->
+                mission.target().location().latitude() == 36.33005
+                && mission.target().location().longitude() == 127.43065
+        ));
+    }
+
     private MissionDemoService createService() {
         MarketService marketService = mock(MarketService.class);
         StoreService storeService = mock(StoreService.class);
+        MarketResponse centralMarket = new MarketResponse(
+                77L,
+                "대전중앙시장",
+                null,
+                new MarketResponse.LocationResponse(
+                        36.33005,
+                        127.43065
+                ),
+                null,
+                null
+        );
+        when(marketService.findAll()).thenReturn(List.of(centralMarket));
         when(marketService.findMarketsAtLocation(anyDouble(), anyDouble()))
-                .thenReturn(List.of(new MarketResponse(
-                        1L,
-                        "테스트 시장",
-                        null,
-                        null,
-                        null
-                )));
+                .thenReturn(List.of(centralMarket));
         when(storeService.findStoresNearLocation(
                 anyDouble(),
                 anyDouble(),
@@ -105,7 +131,10 @@ class MissionDemoServiceTest {
         )).thenReturn(List.of());
 
         return new MissionDemoService(
-                new DemoMissionCatalog(),
+                new MissionRunCatalog(
+                        new DemoMissionCatalog(),
+                        new MissionTargetResolver(marketService)
+                ),
                 new DailyMissionPolicy(),
                 new MissionLocationPolicy(),
                 new MissionRunStateStore("42"),
