@@ -76,37 +76,65 @@
   color: #888888;
 }
 
-.ranking-row {
-  display: flex;
-  justify-content: flex-end;
-  margin: 14px 2px 28px;
+.mission-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 28px;
 }
 
-.ranking-button {
+.mission-shortcuts a {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  font-weight: 600;
-  color: #444444;
-  cursor: pointer;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 28px 12px 12px;
+  border: 1px solid #e5e5e1;
+  border-radius: 11px;
+  background: #fff;
+  color: #252525;
   text-decoration: none;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.025);
 }
 
-.ranking-button span {
-  font-size: 17px;
-  transition: transform 0.15s ease;
+.mission-shortcuts a:hover,
+.mission-shortcuts a:focus-visible {
+  border-color: #d6b875;
+  background: #fffdf7;
 }
 
-.ranking-button:hover {
-  color: #111111;
+.mission-shortcuts a:focus-visible {
+  outline: 3px solid rgba(243, 173, 24, 0.28);
+  outline-offset: 2px;
 }
 
-.ranking-button:hover span {
-  transform: translateX(3px);
+.mission-shortcuts small {
+  color: #b17b0d;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.mission-shortcuts strong {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-shortcuts span {
+  position: absolute;
+  right: 11px;
+  bottom: 11px;
+  color: #a3a39e;
+  font-size: 14px;
+  transition: transform 150ms ease;
+}
+
+.mission-shortcuts a:hover span {
+  transform: translateX(2px);
 }
 
 .missions-section {
@@ -155,6 +183,29 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.mission-list-empty {
+  display: flex;
+  min-height: 110px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  padding: 20px;
+  border: 1px dashed #d9d9d3;
+  border-radius: 12px;
+  background: #f9f9f6;
+  color: #696963;
+  text-align: center;
+}
+
+.mission-list-empty strong {
+  font-size: 14px;
+}
+
+.mission-list-empty span {
+  font-size: 11px;
 }
 
 .mission-card {

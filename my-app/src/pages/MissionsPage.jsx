@@ -64,12 +64,23 @@ function MissionsPage() {
           </p>
         </section>
 
-        <div className="ranking-row">
-          <Link className="ranking-button" to="/missions/rankings">
-            랭킹 보기
+        <nav className="mission-shortcuts" aria-label="미션 보조 메뉴">
+          <Link to="/missions/guide">
+            <small>GUIDE</small>
+            <strong>유형 안내</strong>
             <span>→</span>
           </Link>
-        </div>
+          <Link to="/missions/challenges">
+            <small>RECORD</small>
+            <strong>도전 기록</strong>
+            <span>→</span>
+          </Link>
+          <Link to="/missions/rankings">
+            <small>RANKING</small>
+            <strong>참여 순위</strong>
+            <span>→</span>
+          </Link>
+        </nav>
 
         <MissionSection
           eyebrow="DAILY"
@@ -100,9 +111,16 @@ function MissionSection({ eyebrow, title, missions, special = false }) {
       </div>
 
       <div className="mission-list">
-        {missions.map((mission) => (
-          <MissionCard key={mission.id} mission={mission} special={special} />
-        ))}
+        {missions.length === 0 ? (
+          <div className="mission-list-empty">
+            <strong>배정된 미션이 없어요.</strong>
+            <span>새 미션이 준비되면 이곳에 표시됩니다.</span>
+          </div>
+        ) : (
+          missions.map((mission) => (
+            <MissionCard key={mission.id} mission={mission} special={special} />
+          ))
+        )}
       </div>
     </section>
   );
@@ -128,7 +146,9 @@ function MissionCard({ mission, special = false }) {
         </span>
         <span className={`mission-status ${statusClassName}`}>
           {MISSION_STATUS_LABEL[mission.status]}
-          {mission.id === 3 && <span> {mission.progress.label}</span>}
+          {mission.availability.remainingSlots != null && (
+            <span> · {mission.availability.remainingSlots}자리</span>
+          )}
         </span>
       </div>
 
