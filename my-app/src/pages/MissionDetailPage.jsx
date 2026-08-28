@@ -22,7 +22,6 @@ function MissionDetailPage() {
     errorMessage,
     pendingMissionId,
     refreshMissions,
-    completeMission,
     claimMissionReward,
   } = useMissionDemo();
   const mission = findDemoMission(missionId, missions);
@@ -82,15 +81,12 @@ function MissionDetailPage() {
   const isClosed = mission.status === MISSION_STATUS.CLOSED;
 
   const handlePrimaryAction = async () => {
-    try {
-      if (isCompleted) {
-        await claimMissionReward(mission.id);
-        return;
-      }
+    if (!isCompleted) {
+      return;
+    }
 
-      if (!isClaimed && !isClosed) {
-        await completeMission(mission.id);
-      }
+    try {
+      await claimMissionReward(mission.id);
     } catch {
       // 오류 메시지는 공통 미션 상태 컨텍스트에서 화면에 표시합니다.
     }
@@ -221,8 +217,7 @@ function MissionDetailPage() {
             className="mission-primary-action"
             onClick={handlePrimaryAction}
             disabled={
-              isClaimed
-              || isClosed
+              !isCompleted
               || pendingMissionId === String(mission.id)
             }
           >
@@ -233,7 +228,7 @@ function MissionDetailPage() {
         </div>
         {!isClaimed && !isClosed && (
           <p className="mission-demo-caption">
-            데모에서는 위치 판정 결과를 버튼으로 재현합니다.
+            현재 위치 또는 WASD 이동이 목표 조건을 충족하면 자동으로 반영됩니다.
           </p>
         )}
       </div>
@@ -254,7 +249,7 @@ function getActionLabel(status) {
     return "마감된 미션";
   }
 
-  return "방문 완료 데모";
+  return "GPS 위치 판정 대기";
 }
 
 export default MissionDetailPage;

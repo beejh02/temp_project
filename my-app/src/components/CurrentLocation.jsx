@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import useMissionDemo from "../hooks/useMissionDemo";
 import "./CurrentLocation.css";
 
 const INITIAL_MOVE_STEP = 0.00005;
 const MIN_MOVE_STEP = 0.000005;
 const MAX_MOVE_STEP = 0.001;
+const MISSION_LOCATION_HEARTBEAT_MS = 10000;
 
 /*
  * 현재 좌표가 어느 시장에 포함되는지 Backend에 조회
@@ -30,6 +32,9 @@ function CurrentLocation({ map }) {
   const markerRef = useRef(null);
   const positionRef = useRef(null);
   const moveStepRef = useRef(INITIAL_MOVE_STEP);
+  const watchIdRef = useRef(null);
+  const simulationModeRef = useRef(false);
+  const { recordMissionLocation } = useMissionDemo();
 
   /*
    * 현재 들어가 있는 시장 ID
@@ -43,6 +48,35 @@ function CurrentLocation({ map }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [entryMessage, setEntryMessage] = useState("");
+
+  const submitMissionLocation = useCallback(
+    (latitude, longitude, accuracy = 5) => {
+      recordMissionLocation({
+        latitude,
+        longitude,
+        accuracy,
+        recordedAt: new Date().toISOString(),
+      }).catch((error) => {
+        console.error("미션 위치 판정 중 오류:", error);
+      });
+    },
+    [recordMissionLocation],
+  );
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (!positionRef.current) {
+        return;
+      }
+
+      const { lat, lng, accuracy = 5 } = positionRef.current;
+      submitMissionLocation(lat, lng, accuracy);
+    }, MISSION_LOCATION_HEARTBEAT_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [submitMissionLocation]);
 
   /* 현재 좌표의 시장 상태 확인 */
   const checkMarketEntry = useCallback(async (latitude, longitude) => {
@@ -92,6 +126,11 @@ function CurrentLocation({ map }) {
 
       if (entryMessageTimerRef.current) {
         clearTimeout(entryMessageTimerRef.current);
+      }
+
+      if (watchIdRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
       }
     };
   }, [map]);
@@ -143,6 +182,12 @@ function CurrentLocation({ map }) {
 
       event.preventDefault();
 
+      if (watchIdRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      simulationModeRef.current = true;
+
       let { lat, lng } = positionRef.current;
       const moveStep = moveStepRef.current;
 
@@ -166,6 +211,7 @@ function CurrentLocation({ map }) {
       positionRef.current = {
         lat,
         lng,
+        accuracy: 5,
       };
 
       const newPosition = new window.naver.maps.LatLng(lat, lng);
@@ -177,6 +223,7 @@ function CurrentLocation({ map }) {
        * 현재 포함된 시장 조회
        */
       checkMarketEntry(lat, lng);
+      submitMissionLocation(lat, lng);
 
       setMessage(
         `테스트 위치: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 속도: ${moveStep.toFixed(6)}`,
@@ -188,7 +235,7 @@ function CurrentLocation({ map }) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [map, checkMarketEntry]);
+  }, [map, checkMarketEntry, submitMissionLocation]);
 
   /* 현재 위치 가져오기 */
   const handleCurrentLocation = () => {
@@ -209,11 +256,20 @@ function CurrentLocation({ map }) {
 
     setIsLoading(true);
     setMessage("현재 위치를 확인하고 있습니다.");
+    simulationModeRef.current = false;
 
-    navigator.geolocation.getCurrentPosition(
+    if (watchIdRef.current != null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
       /* 위치 조회 성공 */
       (position) => {
-        const { latitude, longitude } = position.coords;
+        if (simulationModeRef.current) {
+          return;
+        }
+
+        const { latitude, longitude, accuracy } = position.coords;
 
         /*
          * WASD 이동의 시작 위치 저장
@@ -221,6 +277,7 @@ function CurrentLocation({ map }) {
         positionRef.current = {
           lat: latitude,
           lng: longitude,
+          accuracy,
         };
 
         const currentPosition = new window.naver.maps.LatLng(
@@ -248,8 +305,9 @@ function CurrentLocation({ map }) {
 
         /* GPS 위치 기준 시장 진입 여부 확인 */
         checkMarketEntry(latitude, longitude);
+        submitMissionLocation(latitude, longitude, accuracy);
         setMessage(
-          `현재 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 / PageUp·PageDown 속도 조절`,
+          `GPS 추적 중: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 / PageUp·PageDown 속도 조절`,
         );
 
         setIsLoading(false);
@@ -257,6 +315,11 @@ function CurrentLocation({ map }) {
 
       /* 위치 조회 실패 */
       (error) => {
+        if (watchIdRef.current != null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
+        }
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
             setMessage("위치 정보 사용 권한이 거부되었습니다.");

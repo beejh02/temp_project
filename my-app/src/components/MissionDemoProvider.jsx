@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import MissionDemoContext from "../contexts/missionDemoContext";
 
@@ -78,6 +78,7 @@ async function requestJson(url, options) {
 
 function MissionDemoProvider({ children }) {
   const [state, dispatch] = useReducer(missionDemoReducer, initialState);
+  const locationQueueRef = useRef(Promise.resolve());
 
   const loadMissions = useCallback(async () => {
     dispatch({ type: "load" });
@@ -122,6 +123,33 @@ function MissionDemoProvider({ children }) {
     }
   }, []);
 
+  const recordMissionLocation = useCallback((location) => {
+    const request = locationQueueRef.current.then(async () => {
+      const missions = await requestJson("/api/missions/location", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(location),
+      });
+
+      if (!Array.isArray(missions)) {
+        throw new Error("위치 판정 응답 형식이 올바르지 않습니다.");
+      }
+
+      dispatch({ type: "replace", missions });
+
+      return missions;
+    });
+
+    locationQueueRef.current = request.catch((error) => {
+      dispatch({
+        type: "operation-error",
+        message: error.message || "현재 위치를 판정하지 못했습니다.",
+      });
+    });
+
+    return request;
+  }, []);
+
   const value = useMemo(
     () => ({
       missions: state.missions,
@@ -129,12 +157,11 @@ function MissionDemoProvider({ children }) {
       errorMessage: state.errorMessage,
       pendingMissionId: state.pendingMissionId,
       refreshMissions: loadMissions,
-      completeMission: (missionId) =>
-        runMissionAction(missionId, "complete"),
+      recordMissionLocation,
       claimMissionReward: (missionId) =>
         runMissionAction(missionId, "claim"),
     }),
-    [state, loadMissions, runMissionAction],
+    [state, loadMissions, recordMissionLocation, runMissionAction],
   );
 
   return (
