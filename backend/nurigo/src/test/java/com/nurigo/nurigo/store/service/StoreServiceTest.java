@@ -74,6 +74,22 @@ class StoreServiceTest {
                 stores.stream()
                         .anyMatch(store -> store.sourceId().equals("STORE-OUT"))
         );
+
+        List<StoreResponse> nearbyStores
+                = storeService.findStoresNearLocation(
+                        35.005,
+                        126.005,
+                        30
+                );
+
+        assertTrue(
+                nearbyStores.stream()
+                        .anyMatch(store -> store.sourceId().equals("STORE-IN"))
+        );
+        assertFalse(
+                nearbyStores.stream()
+                        .anyMatch(store -> store.sourceId().equals("STORE-OUT"))
+        );
     }
 
     private Store createStore(

@@ -1,5 +1,6 @@
 package com.nurigo.nurigo.mission.runtime;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -95,6 +96,108 @@ class MissionRunStateStoreTest {
         );
     }
 
+    @Test
+    void 시장_체류는_관측_간격을_누적하고_이탈하면_연속_측정을_끊는다() {
+        AssignedFixture fixture = fixtureWithMission(
+                "market-stay-ten-minutes"
+        );
+        Instant startedAt = Instant.parse("2026-08-29T00:00:00Z");
+
+        fixture.store().recordMarketPresence(
+                fixture.session().sessionId(),
+                fixture.mission(),
+                startedAt
+        );
+        fixture.store().recordMarketPresence(
+                fixture.session().sessionId(),
+                fixture.mission(),
+                startedAt.plusSeconds(30)
+        );
+        fixture.store().recordMarketExit(
+                fixture.session().sessionId(),
+                fixture.mission()
+        );
+        MissionRunStateStore.MissionStateSnapshot reentered
+                = fixture.store().recordMarketPresence(
+                        fixture.session().sessionId(),
+                        fixture.mission(),
+                        startedAt.plusSeconds(300)
+                );
+
+        assertEquals(30, reentered.current());
+
+        MissionRunStateStore.MissionStateSnapshot completed = reentered;
+        for (int index = 1; index <= 19; index++) {
+            completed = fixture.store().recordMarketPresence(
+                    fixture.session().sessionId(),
+                    fixture.mission(),
+                    startedAt.plusSeconds(300L + index * 30L)
+            );
+        }
+
+        assertEquals(600, completed.current());
+        assertEquals(MissionStatus.COMPLETED, completed.status());
+    }
+
+    @Test
+    void 점포_탐색은_같은_점포를_중복_집계하지_않는다() {
+        AssignedFixture fixture = fixtureWithMission(
+                "three-store-exploration"
+        );
+
+        MissionRunStateStore.MissionStateSnapshot first
+                = fixture.store().recordNearbyStores(
+                        fixture.session().sessionId(),
+                        fixture.mission(),
+                        List.of(101L, 101L)
+                );
+        MissionRunStateStore.MissionStateSnapshot second
+                = fixture.store().recordNearbyStores(
+                        fixture.session().sessionId(),
+                        fixture.mission(),
+                        List.of(101L, 102L)
+                );
+        MissionRunStateStore.MissionStateSnapshot third
+                = fixture.store().recordNearbyStores(
+                        fixture.session().sessionId(),
+                        fixture.mission(),
+                        List.of(103L)
+                );
+
+        assertEquals(1, first.current());
+        assertEquals(2, second.current());
+        assertEquals(3, third.current());
+        assertEquals(MissionStatus.COMPLETED, third.status());
+    }
+
+    @Test
+    void 공동_미션이_마감된_뒤의_위치_판정은_오류_없이_마감_상태를_반환한다() {
+        AssignedFixture fixture = fixtureWithMission(
+                "first-three-store-visit"
+        );
+        MissionRunStateStore.SessionAccess second = fixture.store()
+                .resolveSession(null, definitions, policy);
+        MissionRunStateStore.SessionAccess third = fixture.store()
+                .resolveSession(null, definitions, policy);
+        MissionRunStateStore.SessionAccess late = fixture.store()
+                .resolveSession(null, definitions, policy);
+
+        fixture.store().completeMission(
+                fixture.session().sessionId(),
+                fixture.mission()
+        );
+        fixture.store().completeMission(second.sessionId(), fixture.mission());
+        fixture.store().completeMission(third.sessionId(), fixture.mission());
+        MissionRunStateStore.MissionStateSnapshot closed
+                = fixture.store().completeMission(
+                        late.sessionId(),
+                        fixture.mission()
+                );
+
+        assertEquals(MissionStatus.CLOSED, closed.status());
+        assertEquals(3, closed.current());
+    }
+
     private List<MissionDefinition> assignedDefinitions(
             MissionRunStateStore store,
             MissionRunStateStore.SessionAccess session
@@ -107,5 +210,37 @@ class MissionRunStateStoreTest {
                 .findFirst()
                 .orElseThrow())
                 .toList();
+    }
+
+    private AssignedFixture fixtureWithMission(String missionKey) {
+        for (int seed = 0; seed < 200; seed++) {
+            MissionRunStateStore store = new MissionRunStateStore(
+                    String.valueOf(seed)
+            );
+            MissionRunStateStore.SessionAccess session
+                    = store.resolveSession(null, definitions, policy);
+            MissionDefinition mission = assignedDefinitions(store, session)
+                    .stream()
+                    .filter(definition -> definition.getMissionKey()
+                            .equals(missionKey))
+                    .findFirst()
+                    .orElse(null);
+
+            if (mission != null) {
+                return new AssignedFixture(store, session, mission);
+            }
+        }
+
+        throw new IllegalStateException(
+                "테스트 미션을 배정하는 시드를 찾지 못했습니다: "
+                + missionKey
+        );
+    }
+
+    private record AssignedFixture(
+            MissionRunStateStore store,
+            MissionRunStateStore.SessionAccess session,
+            MissionDefinition mission
+            ) {
     }
 }
