@@ -1,70 +1,140 @@
-import { useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer } from "react";
 
 import MissionDemoContext from "../contexts/missionDemoContext";
-import { demoMissions, MISSION_STATUS } from "../data/demoMissions";
 
 const initialState = {
-  missions: demoMissions.map((mission) => ({ ...mission })),
+  missions: [],
+  loadStatus: "loading",
+  errorMessage: "",
+  pendingMissionId: null,
 };
 
 function missionDemoReducer(state, action) {
-  if (action.type === "complete") {
+  if (action.type === "load") {
+    return { ...state, loadStatus: "loading", errorMessage: "" };
+  }
+
+  if (action.type === "replace") {
     return {
       ...state,
-      missions: state.missions.map((mission) => {
-        if (
-          String(mission.id) !== String(action.missionId)
-          || [MISSION_STATUS.CLAIMED, MISSION_STATUS.CLOSED].includes(
-            mission.status,
-          )
-        ) {
-          return mission;
-        }
-
-        return {
-          ...mission,
-          status: MISSION_STATUS.COMPLETED,
-          progress: {
-            ...mission.progress,
-            current: mission.progress.target,
-            label: "완료 조건 달성",
-          },
-        };
-      }),
+      missions: action.missions,
+      loadStatus: "success",
+      errorMessage: "",
     };
   }
 
-  if (action.type === "claim") {
-    const targetMission = state.missions.find(
-      (mission) => String(mission.id) === String(action.missionId),
-    );
-
-    if (!targetMission || targetMission.status !== MISSION_STATUS.COMPLETED) {
-      return state;
-    }
-
+  if (action.type === "load-error") {
     return {
+      ...state,
+      loadStatus: "error",
+      errorMessage: action.message,
+    };
+  }
+
+  if (action.type === "operation-start") {
+    return {
+      ...state,
+      pendingMissionId: String(action.missionId),
+      errorMessage: "",
+    };
+  }
+
+  if (action.type === "operation-success") {
+    return {
+      ...state,
+      pendingMissionId: null,
       missions: state.missions.map((mission) =>
-        String(mission.id) === String(action.missionId)
-          ? { ...mission, status: MISSION_STATUS.CLAIMED }
+        String(mission.id) === String(action.mission.id)
+          ? action.mission
           : mission,
       ),
+    };
+  }
+
+  if (action.type === "operation-error") {
+    return {
+      ...state,
+      pendingMissionId: null,
+      errorMessage: action.message,
     };
   }
 
   return state;
 }
 
+async function requestJson(url, options) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+  });
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.message || `미션 요청 실패: ${response.status}`);
+  }
+
+  return data;
+}
+
 function MissionDemoProvider({ children }) {
   const [state, dispatch] = useReducer(missionDemoReducer, initialState);
+
+  const loadMissions = useCallback(async () => {
+    dispatch({ type: "load" });
+
+    try {
+      const missions = await requestJson("/api/missions/daily");
+
+      if (!Array.isArray(missions)) {
+        throw new Error("미션 목록 응답 형식이 올바르지 않습니다.");
+      }
+
+      dispatch({ type: "replace", missions });
+    } catch (error) {
+      dispatch({
+        type: "load-error",
+        message: error.message || "미션 목록을 불러오지 못했습니다.",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMissions();
+  }, [loadMissions]);
+
+  const runMissionAction = useCallback(async (missionId, action) => {
+    dispatch({ type: "operation-start", missionId });
+
+    try {
+      const mission = await requestJson(
+        `/api/missions/${missionId}/${action}`,
+        { method: "POST" },
+      );
+      dispatch({ type: "operation-success", mission });
+
+      return mission;
+    } catch (error) {
+      dispatch({
+        type: "operation-error",
+        message: error.message || "미션 상태를 변경하지 못했습니다.",
+      });
+      throw error;
+    }
+  }, []);
 
   const value = useMemo(
     () => ({
       missions: state.missions,
-      completeMission: (missionId) => dispatch({ type: "complete", missionId }),
-      claimMissionReward: (missionId) => dispatch({ type: "claim", missionId }),
+      loadStatus: state.loadStatus,
+      errorMessage: state.errorMessage,
+      pendingMissionId: state.pendingMissionId,
+      refreshMissions: loadMissions,
+      completeMission: (missionId) =>
+        runMissionAction(missionId, "complete"),
+      claimMissionReward: (missionId) =>
+        runMissionAction(missionId, "claim"),
     }),
-    [state],
+    [state, loadMissions, runMissionAction],
   );
 
   return (

@@ -12,7 +12,12 @@ import useMissionDemo from "../hooks/useMissionDemo";
 import "./MissionsPage.css";
 
 function MissionsPage() {
-  const { missions } = useMissionDemo();
+  const {
+    missions,
+    loadStatus,
+    errorMessage,
+    refreshMissions,
+  } = useMissionDemo();
   const dailyMissions = missions.filter(
     (mission) => mission.group === MISSION_GROUP.DAILY,
   );
@@ -82,18 +87,39 @@ function MissionsPage() {
           </Link>
         </nav>
 
-        <MissionSection
-          eyebrow="DAILY"
-          title="Daily Mission"
-          missions={dailyMissions}
-        />
+        {loadStatus === "loading" && (
+          <div className="mission-list-empty" aria-live="polite">
+            <strong>오늘의 미션을 구성하고 있어요.</strong>
+            <span>서버 실행 상태를 확인하는 중입니다.</span>
+          </div>
+        )}
 
-        <MissionSection
-          eyebrow="SPECIAL"
-          title="Special Mission"
-          missions={specialMissions}
-          special
-        />
+        {loadStatus === "error" && (
+          <div className="mission-list-empty" role="alert">
+            <strong>미션을 불러오지 못했어요.</strong>
+            <span>{errorMessage}</span>
+            <button type="button" onClick={refreshMissions}>
+              다시 시도
+            </button>
+          </div>
+        )}
+
+        {loadStatus === "success" && (
+          <>
+            <MissionSection
+              eyebrow="DAILY"
+              title="Daily Mission"
+              missions={dailyMissions}
+            />
+
+            <MissionSection
+              eyebrow="SPECIAL"
+              title="Special Mission"
+              missions={specialMissions}
+              special
+            />
+          </>
+        )}
       </div>
     </main>
   );
@@ -142,6 +168,7 @@ function MissionCard({ mission, special = false }) {
     >
       <div className="mission-card-header">
         <span className="mission-category">
+          {mission.shared && "공동 · "}
           {MISSION_CATEGORY_LABEL[mission.category]}
         </span>
         <span className={`mission-status ${statusClassName}`}>

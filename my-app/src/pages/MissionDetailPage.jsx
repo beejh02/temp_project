@@ -16,8 +16,47 @@ import "./MissionSubpage.css";
 function MissionDetailPage() {
   const { missionId } = useParams();
   const navigate = useNavigate();
-  const { missions, completeMission, claimMissionReward } = useMissionDemo();
+  const {
+    missions,
+    loadStatus,
+    errorMessage,
+    pendingMissionId,
+    refreshMissions,
+    completeMission,
+    claimMissionReward,
+  } = useMissionDemo();
   const mission = findDemoMission(missionId, missions);
+
+  if (loadStatus === "loading") {
+    return (
+      <main className="mission-subpage">
+        <div className="mission-subpage__content">
+          <MissionPageHeader eyebrow="MISSION" title="미션을 불러오는 중이에요" />
+          <section className="mission-empty-card" aria-live="polite">
+            <MissionIcon type="clock" />
+            <p>서버의 미션 상태를 확인하고 있습니다.</p>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (loadStatus === "error") {
+    return (
+      <main className="mission-subpage">
+        <div className="mission-subpage__content">
+          <MissionPageHeader eyebrow="MISSION" title="미션을 불러오지 못했어요" />
+          <section className="mission-empty-card" role="alert">
+            <MissionIcon type="info" />
+            <p>{errorMessage}</p>
+            <button type="button" onClick={refreshMissions}>
+              다시 시도
+            </button>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   if (!mission) {
     return (
@@ -42,14 +81,18 @@ function MissionDetailPage() {
   const isClaimed = mission.status === MISSION_STATUS.CLAIMED;
   const isClosed = mission.status === MISSION_STATUS.CLOSED;
 
-  const handlePrimaryAction = () => {
-    if (isCompleted) {
-      claimMissionReward(mission.id);
-      return;
-    }
+  const handlePrimaryAction = async () => {
+    try {
+      if (isCompleted) {
+        await claimMissionReward(mission.id);
+        return;
+      }
 
-    if (!isClaimed && !isClosed) {
-      completeMission(mission.id);
+      if (!isClaimed && !isClosed) {
+        await completeMission(mission.id);
+      }
+    } catch {
+      // 오류 메시지는 공통 미션 상태 컨텍스트에서 화면에 표시합니다.
     }
   };
 
@@ -78,6 +121,7 @@ function MissionDetailPage() {
             </span>
           </div>
           <h2>{mission.title}</h2>
+          {mission.shared && <small>모든 접속자가 진행도를 공유하는 공동 미션</small>}
           <p>{mission.description}</p>
           <div className="mission-detail-reward">
             <MissionIcon type="coin" />
@@ -96,6 +140,13 @@ function MissionDetailPage() {
               <h2>{mission.reward.toLocaleString()} NP를 받았어요!</h2>
               <p>미션 보상이 정상적으로 지급됐어요.</p>
             </div>
+          </section>
+        )}
+
+        {errorMessage && (
+          <section className="mission-empty-card" role="alert">
+            <MissionIcon type="info" />
+            <p>{errorMessage}</p>
           </section>
         )}
 
@@ -169,9 +220,15 @@ function MissionDetailPage() {
             type="button"
             className="mission-primary-action"
             onClick={handlePrimaryAction}
-            disabled={isClaimed || isClosed}
+            disabled={
+              isClaimed
+              || isClosed
+              || pendingMissionId === String(mission.id)
+            }
           >
-            {getActionLabel(mission.status)}
+            {pendingMissionId === String(mission.id)
+              ? "처리 중..."
+              : getActionLabel(mission.status)}
           </button>
         </div>
         {!isClaimed && !isClosed && (
