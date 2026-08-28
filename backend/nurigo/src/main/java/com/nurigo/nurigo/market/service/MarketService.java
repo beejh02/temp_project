@@ -2,6 +2,7 @@ package com.nurigo.nurigo.market.service;
 
 import java.util.List;
 
+import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.springframework.stereotype.Service;
 
@@ -56,10 +57,23 @@ public class MarketService {
     }
 
     private MarketResponse toResponse(Market market) {
+        Point representativePoint = market.getBoundary().getInteriorPoint();
+
+        if (representativePoint.isEmpty()) {
+            throw new IllegalStateException(
+                    "시장 Polygon의 대표 좌표를 계산할 수 없습니다: "
+                    + market.getId()
+            );
+        }
+
         return new MarketResponse(
                 market.getId(),
                 market.getName(),
                 marketGeometryMapper.toGeoJson(market.getBoundary()),
+                new MarketResponse.LocationResponse(
+                        representativePoint.getY(),
+                        representativePoint.getX()
+                ),
                 market.getCreatedAt(),
                 market.getUpdatedAt()
         );
