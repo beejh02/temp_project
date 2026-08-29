@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nurigo.nurigo.market.dto.MarketCreateRequest;
+import com.nurigo.nurigo.market.entity.Market;
 import com.nurigo.nurigo.market.service.MarketService;
 import com.nurigo.nurigo.store.dto.StoreResponse;
 import com.nurigo.nurigo.store.entity.Store;
@@ -51,7 +52,7 @@ class StoreServiceTest {
                         )
                 );
 
-        marketService.create(
+        Market market = marketService.create(
                 new MarketCreateRequest("점포 조회 테스트 시장", boundary)
         );
 
@@ -72,6 +73,18 @@ class StoreServiceTest {
         );
         assertFalse(
                 stores.stream()
+                        .anyMatch(store -> store.sourceId().equals("STORE-OUT"))
+        );
+
+        List<StoreResponse> marketStores
+                = storeService.findStoresInsideMarket(market.getId());
+
+        assertTrue(
+                marketStores.stream()
+                        .anyMatch(store -> store.sourceId().equals("STORE-IN"))
+        );
+        assertFalse(
+                marketStores.stream()
                         .anyMatch(store -> store.sourceId().equals("STORE-OUT"))
         );
 

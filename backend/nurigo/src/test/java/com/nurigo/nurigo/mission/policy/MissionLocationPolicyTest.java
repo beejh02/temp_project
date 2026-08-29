@@ -36,4 +36,11 @@ class MissionLocationPolicyTest {
                 storeMission.getTargetLongitude()
         ));
     }
+
+    @Test
+    void 정확도_기준을_넘는_GPS는_거부한다() {
+        assertTrue(policy.hasAcceptableAccuracy(50));
+        assertFalse(policy.hasAcceptableAccuracy(50.1));
+        assertFalse(policy.hasAcceptableAccuracy(Double.NaN));
+    }
 }

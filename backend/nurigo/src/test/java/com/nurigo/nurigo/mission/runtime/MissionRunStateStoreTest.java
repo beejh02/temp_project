@@ -1,10 +1,15 @@
 package com.nurigo.nurigo.mission.runtime;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import com.nurigo.nurigo.mission.config.DemoMissionCatalog;
@@ -196,6 +201,70 @@ class MissionRunStateStoreTest {
 
         assertEquals(MissionStatus.CLOSED, closed.status());
         assertEquals(3, closed.current());
+    }
+
+    @Test
+    void 위치_요청은_중복과_역순을_무시하고_오래된_시간을_거부한다() {
+        MissionRunStateStore store = new MissionRunStateStore("42");
+        MissionRunStateStore.SessionAccess session
+                = store.resolveSession(null, definitions, policy);
+        Instant receivedAt = Instant.now();
+        Instant recordedAt = receivedAt.minusSeconds(1);
+
+        assertTrue(store.acceptLocationObservation(
+                session.sessionId(),
+                recordedAt,
+                receivedAt
+        ));
+        assertFalse(store.acceptLocationObservation(
+                session.sessionId(),
+                recordedAt,
+                receivedAt.plusSeconds(1)
+        ));
+        assertFalse(store.acceptLocationObservation(
+                session.sessionId(),
+                recordedAt.minusSeconds(1),
+                receivedAt.plusSeconds(1)
+        ));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> store.acceptLocationObservation(
+                        session.sessionId(),
+                        receivedAt.minusSeconds(121),
+                        receivedAt
+                )
+        );
+    }
+
+    @Test
+    void 도전_방문과_보상은_세션에_유지되고_랭킹에_한_번만_반영된다() {
+        MissionRunStateStore store = new MissionRunStateStore("42");
+        MissionRunStateStore.SessionAccess session
+                = store.resolveSession(null, definitions, policy);
+        MissionRunStateStore.ChallengeStateSnapshot initial
+                = store.getChallengeState(session.sessionId());
+        int beforePoints = store.getRanking(
+                session.sessionId(),
+                com.nurigo.nurigo.mission.entity.RankingPeriod.WEEKLY
+        ).points();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+        MissionRunStateStore.ChallengeStateSnapshot completed
+                = store.recordChallengeVisit(session.sessionId(), today);
+        MissionRunStateStore.ChallengeStateSnapshot claimed
+                = store.claimChallengeReward(session.sessionId(), 5);
+        store.claimChallengeReward(session.sessionId(), 5);
+        int afterPoints = store.getRanking(
+                session.sessionId(),
+                com.nurigo.nurigo.mission.entity.RankingPeriod.WEEKLY
+        ).points();
+
+        assertEquals(2, initial.current());
+        assertEquals(MissionStatus.IN_PROGRESS, initial.status());
+        assertEquals(3, completed.current());
+        assertEquals(MissionStatus.COMPLETED, completed.status());
+        assertEquals(MissionStatus.CLAIMED, claimed.status());
+        assertEquals(beforePoints + 5, afterPoints);
     }
 
     private List<MissionDefinition> assignedDefinitions(

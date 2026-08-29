@@ -14,13 +14,16 @@ import org.junit.jupiter.api.Test;
 import com.nurigo.nurigo.market.dto.MarketResponse;
 import com.nurigo.nurigo.market.service.MarketService;
 import com.nurigo.nurigo.mission.config.DemoMissionCatalog;
+import com.nurigo.nurigo.mission.config.DemoRunSeed;
 import com.nurigo.nurigo.mission.config.MissionRunCatalog;
 import com.nurigo.nurigo.mission.dto.MissionLocationRequest;
 import com.nurigo.nurigo.mission.dto.MissionResponse;
 import com.nurigo.nurigo.mission.dto.RankingResponse;
+import com.nurigo.nurigo.mission.dto.ChallengeResponse;
 import com.nurigo.nurigo.mission.policy.DailyMissionPolicy;
 import com.nurigo.nurigo.mission.policy.MissionLocationPolicy;
 import com.nurigo.nurigo.mission.runtime.MissionRunStateStore;
+import com.nurigo.nurigo.store.dto.StoreResponse;
 import com.nurigo.nurigo.store.service.StoreService;
 
 class MissionDemoServiceTest {
@@ -47,7 +50,7 @@ class MissionDemoServiceTest {
                         personalMission.target().location().latitude(),
                         personalMission.target().location().longitude(),
                         5,
-                        Instant.parse("2026-08-29T00:00:00Z")
+                        Instant.now()
                 )
         ).data();
         MissionResponse completed = locationResult.stream()
@@ -107,6 +110,47 @@ class MissionDemoServiceTest {
         ));
     }
 
+    @Test
+    void 오늘_시장_방문으로_도전을_완료하고_보상을_랭킹에_반영한다() {
+        MissionDemoService service = createService();
+        MissionSessionResult<List<ChallengeResponse>> initial
+                = service.getChallenges(null);
+        RankingResponse before = service.getRanking(
+                initial.sessionId(),
+                "weekly"
+        ).data();
+
+        service.recordLocation(
+                initial.sessionId(),
+                new MissionLocationRequest(
+                        36.33005,
+                        127.43065,
+                        5,
+                        Instant.now()
+                )
+        );
+        ChallengeResponse completed = service.getChallenges(
+                initial.sessionId()
+        ).data().get(0);
+        ChallengeResponse claimed = service.claimChallengeReward(
+                initial.sessionId(),
+                MissionDemoService.CHALLENGE_ID
+        ).data();
+        RankingResponse after = service.getRanking(
+                initial.sessionId(),
+                "weekly"
+        ).data();
+
+        assertEquals(2, initial.data().get(0).current());
+        assertEquals("completed", completed.status());
+        assertEquals("claimed", claimed.status());
+        assertEquals(
+                before.currentUser().points()
+                + MissionDemoService.CHALLENGE_REWARD,
+                after.currentUser().points()
+        );
+    }
+
     private MissionDemoService createService() {
         MarketService marketService = mock(MarketService.class);
         StoreService storeService = mock(StoreService.class);
@@ -129,17 +173,45 @@ class MissionDemoServiceTest {
                 anyDouble(),
                 anyDouble()
         )).thenReturn(List.of());
+        when(storeService.findStoresInsideMarket(77L)).thenReturn(List.of(
+                store(201L),
+                store(202L),
+                store(203L),
+                store(204L)
+        ));
 
         return new MissionDemoService(
                 new MissionRunCatalog(
                         new DemoMissionCatalog(),
-                        new MissionTargetResolver(marketService)
+                        new MissionTargetResolver(
+                                marketService,
+                                storeService,
+                                new DemoRunSeed("42")
+                        )
                 ),
                 new DailyMissionPolicy(),
                 new MissionLocationPolicy(),
                 new MissionRunStateStore("42"),
                 marketService,
                 storeService
+        );
+    }
+
+    private StoreResponse store(long id) {
+        return new StoreResponse(
+                id,
+                "source-" + id,
+                "실제 점포 " + id,
+                null,
+                "Q",
+                "음식",
+                null,
+                null,
+                null,
+                null,
+                "실제 주소 " + id,
+                36.33005 + id / 1_000_000.0,
+                127.43065 + id / 1_000_000.0
         );
     }
 }
