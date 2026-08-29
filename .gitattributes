@@ -1,1 +1,19 @@
-* text=auto eol=crlf
+* text=auto
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.java text eol=crlf
+*.js text eol=crlf
+*.jsx text eol=crlf
+*.css text eol=crlf
+*.html text eol=crlf
+*.json text eol=crlf
+*.md text eol=crlf
+*.properties text eol=crlf
+*.gradle text eol=crlf
+*.sql text eol=crlf
+*.csv text eol=crlf
+
+*.sh text eol=lf
+gradlew text eol=lf
