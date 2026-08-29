@@ -55,8 +55,8 @@ public class DemoMissionCatalog {
             ),
             mission(
                     3L, "first-three-store-visit", MissionGroup.SPECIAL,
-                    MissionCategory.CHALLENGE, "선착순 3명 반찬가게 방문",
-                    "남은 자리 안에 지정 반찬가게를 방문해보세요.",
+                    MissionCategory.CHALLENGE, "선착순 3명 지정 점포 방문",
+                    "남은 자리 안에 오늘의 지정 점포를 방문해보세요.",
                     "선착순 참여가 지금 시장을 방문해야 할 계기를 만들어요.",
                     9, MissionTargetType.STORE, 102L, "황금찬 반찬가게",
                     "대전 중앙시장 먹자골목", 36.3271, 127.42675,

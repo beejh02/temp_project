@@ -1,5 +1,7 @@
 package com.nurigo.nurigo.mission.service;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -8,6 +10,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.nurigo.nurigo.mission.config.MissionRunCatalog;
+import com.nurigo.nurigo.mission.dto.ChallengeResponse;
 import com.nurigo.nurigo.mission.dto.MissionResponse;
 import com.nurigo.nurigo.mission.dto.MissionLocationRequest;
 import com.nurigo.nurigo.mission.dto.RankingResponse;
@@ -18,6 +21,7 @@ import com.nurigo.nurigo.market.service.MarketService;
 import com.nurigo.nurigo.mission.policy.DailyMissionPolicy;
 import com.nurigo.nurigo.mission.policy.MissionLocationPolicy;
 import com.nurigo.nurigo.mission.runtime.MissionRunStateStore;
+import com.nurigo.nurigo.mission.runtime.MissionRunStateStore.ChallengeStateSnapshot;
 import com.nurigo.nurigo.mission.runtime.MissionRunStateStore.MissionStateSnapshot;
 import com.nurigo.nurigo.mission.runtime.MissionRunStateStore.SessionAccess;
 import com.nurigo.nurigo.store.dto.StoreResponse;
@@ -25,6 +29,12 @@ import com.nurigo.nurigo.store.service.StoreService;
 
 @Service
 public class MissionDemoService {
+
+    public static final String CHALLENGE_ID = "three-day-streak";
+    public static final int CHALLENGE_TARGET = 3;
+    public static final int CHALLENGE_REWARD = 5;
+
+    private static final ZoneId DEMO_ZONE = ZoneId.of("Asia/Seoul");
 
     private final MissionRunCatalog missionCatalog;
     private final DailyMissionPolicy dailyMissionPolicy;
@@ -77,15 +87,43 @@ public class MissionDemoService {
     ) {
         SessionAccess session = resolveSession(requestedSessionId);
         validateCoordinates(request.latitude(), request.longitude());
+        validateAccuracy(request.accuracy());
         List<MissionDefinition> definitions = assignedDefinitions(
                 session.sessionId()
         );
+        Instant receivedAt = Instant.now();
+
+        if (!runStateStore.acceptLocationObservation(
+                session.sessionId(),
+                request.recordedAt(),
+                receivedAt
+        )) {
+            return result(session, definitions.stream()
+                    .map(definition -> toResponse(
+                            session.sessionId(),
+                            definition
+                    ))
+                    .toList());
+        }
         Set<Long> marketIds = marketService.findMarketsAtLocation(
                 request.latitude(),
                 request.longitude()
         ).stream()
                 .map(market -> market.id())
                 .collect(Collectors.toSet());
+        boolean visitsMissionMarket = missionCatalog.getDefinitions()
+                .stream()
+                .filter(definition -> definition.getTargetType()
+                        == MissionTargetType.MARKET)
+                .map(MissionDefinition::getTargetId)
+                .anyMatch(marketIds::contains);
+
+        if (visitsMissionMarket) {
+            runStateStore.recordChallengeVisit(
+                    session.sessionId(),
+                    receivedAt.atZone(DEMO_ZONE).toLocalDate()
+            );
+        }
         boolean needsNearbyStores = definitions.stream()
                 .anyMatch(definition -> definition.getMissionKey()
                         .equals("three-store-exploration"));
@@ -130,7 +168,7 @@ public class MissionDemoService {
                 runStateStore.recordMarketPresence(
                         session.sessionId(),
                         definition,
-                        request.recordedAt()
+                        receivedAt
                 );
             } else if (definition.getProgressTarget() == 600) {
                 runStateStore.recordMarketExit(
@@ -188,6 +226,64 @@ public class MissionDemoService {
         );
 
         return result(session, response);
+    }
+
+    public MissionSessionResult<List<ChallengeResponse>> getChallenges(
+            String requestedSessionId
+    ) {
+        SessionAccess session = resolveSession(requestedSessionId);
+        ChallengeStateSnapshot snapshot = runStateStore.getChallengeState(
+                session.sessionId()
+        );
+
+        return result(session, List.of(toChallengeResponse(snapshot)));
+    }
+
+    public MissionSessionResult<ChallengeResponse> claimChallengeReward(
+            String requestedSessionId,
+            String challengeId
+    ) {
+        if (!CHALLENGE_ID.equals(challengeId)) {
+            throw new IllegalArgumentException(
+                    "도전 기록을 찾을 수 없습니다: " + challengeId
+            );
+        }
+
+        SessionAccess session = resolveSession(requestedSessionId);
+        ChallengeStateSnapshot snapshot = runStateStore.claimChallengeReward(
+                session.sessionId(),
+                CHALLENGE_REWARD
+        );
+
+        return result(session, toChallengeResponse(snapshot));
+    }
+
+    private ChallengeResponse toChallengeResponse(
+            ChallengeStateSnapshot snapshot
+    ) {
+        return new ChallengeResponse(
+                CHALLENGE_ID,
+                "3일 연속 시장 방문",
+                "하루 한 번 시장 방문을 기록해 연속 방문을 완성해요.",
+                snapshot.status().getApiValue(),
+                snapshot.current(),
+                CHALLENGE_TARGET,
+                CHALLENGE_REWARD,
+                java.util.stream.IntStream.range(
+                        0,
+                        snapshot.visits().size()
+                ).mapToObj(index -> {
+                    MissionRunStateStore.ChallengeVisitSnapshot visit
+                            = snapshot.visits().get(index);
+                    return new ChallengeResponse.VisitDayResponse(
+                            (index + 1) + "일차",
+                            visit.date().getMonthValue()
+                            + "."
+                            + visit.date().getDayOfMonth(),
+                            visit.completed()
+                    );
+                }).toList()
+        );
     }
 
     private SessionAccess resolveSession(String requestedSessionId) {
@@ -314,6 +410,18 @@ public class MissionDemoService {
         if (latitude < -90 || latitude > 90
                 || longitude < -180 || longitude > 180) {
             throw new IllegalArgumentException("위치 좌표 범위가 올바르지 않습니다.");
+        }
+    }
+
+    private void validateAccuracy(double accuracy) {
+        if (!missionLocationPolicy.hasAcceptableAccuracy(accuracy)) {
+            throw new IllegalArgumentException(
+                    "GPS 정확도가 %.0fm 이내인 위치만 판정할 수 있습니다."
+                            .formatted(
+                                    MissionLocationPolicy
+                                            .MAX_ACCEPTED_ACCURACY_METERS
+                            )
+            );
         }
     }
 

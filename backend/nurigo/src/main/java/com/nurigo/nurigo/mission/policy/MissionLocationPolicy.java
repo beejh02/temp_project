@@ -8,7 +8,14 @@ import com.nurigo.nurigo.mission.entity.MissionDefinition;
 public class MissionLocationPolicy {
 
     public static final double STORE_RADIUS_METERS = 30.0;
+    public static final double MAX_ACCEPTED_ACCURACY_METERS = 50.0;
     private static final double EARTH_RADIUS_METERS = 6_371_000.0;
+
+    public boolean hasAcceptableAccuracy(double accuracy) {
+        return Double.isFinite(accuracy)
+                && accuracy >= 0
+                && accuracy <= MAX_ACCEPTED_ACCURACY_METERS;
+    }
 
     public boolean isWithinStoreRadius(
             MissionDefinition definition,

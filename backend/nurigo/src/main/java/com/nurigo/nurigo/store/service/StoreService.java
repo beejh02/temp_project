@@ -27,6 +27,14 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
+    public List<StoreResponse> findStoresInsideMarket(Long marketId) {
+        return storeRepository.findStoresInsideMarket(marketId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<StoreResponse> findStoresNearLocation(
             double latitude,
             double longitude,

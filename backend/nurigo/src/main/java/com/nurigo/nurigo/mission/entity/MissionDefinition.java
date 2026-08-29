@@ -143,6 +143,7 @@ public final class MissionDefinition {
     public MissionDefinition withTarget(
             Long resolvedTargetId,
             String resolvedTargetName,
+            String resolvedTargetAddress,
             double resolvedTargetLatitude,
             double resolvedTargetLongitude
     ) {
@@ -158,7 +159,7 @@ public final class MissionDefinition {
                 targetType,
                 resolvedTargetId,
                 resolvedTargetName,
-                targetAddress,
+                resolvedTargetAddress,
                 resolvedTargetLatitude,
                 resolvedTargetLongitude,
                 verificationLabel,

@@ -32,6 +32,20 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
             value = """
                     SELECT s.*
                     FROM stores s
+                    JOIN markets m ON m.id = :marketId
+                    WHERE ST_Covers(m.boundary, s.location)
+                    ORDER BY s.id
+                    """,
+            nativeQuery = true
+    )
+    List<Store> findStoresInsideMarket(
+            @Param("marketId") Long marketId
+    );
+
+    @Query(
+            value = """
+                    SELECT s.*
+                    FROM stores s
                     WHERE ST_DWithin(
                         s.location::geography,
                         ST_SetSRID(

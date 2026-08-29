@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nurigo.nurigo.mission.dto.MissionResponse;
+import com.nurigo.nurigo.mission.dto.ChallengeResponse;
 import com.nurigo.nurigo.mission.dto.MissionLocationRequest;
 import com.nurigo.nurigo.mission.dto.RankingResponse;
 import com.nurigo.nurigo.mission.service.MissionDemoService;
@@ -70,6 +71,34 @@ public class MissionController {
     ) {
         return response(
                 missionDemoService.claimReward(sessionId, missionId)
+        );
+    }
+
+    @GetMapping("/challenges")
+    public ResponseEntity<List<ChallengeResponse>> getChallenges(
+            @CookieValue(
+                    name = SESSION_COOKIE_NAME,
+                    required = false
+            ) String sessionId
+    ) {
+        return response(
+                missionDemoService.getChallenges(sessionId)
+        );
+    }
+
+    @PostMapping("/challenges/{challengeId}/claim")
+    public ResponseEntity<ChallengeResponse> claimChallengeReward(
+            @CookieValue(
+                    name = SESSION_COOKIE_NAME,
+                    required = false
+            ) String sessionId,
+            @PathVariable String challengeId
+    ) {
+        return response(
+                missionDemoService.claimChallengeReward(
+                        sessionId,
+                        challengeId
+                )
         );
     }
 

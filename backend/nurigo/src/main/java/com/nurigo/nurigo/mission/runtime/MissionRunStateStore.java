@@ -37,6 +37,8 @@ public class MissionRunStateStore {
     private static final String[] BOT_NICKNAMES = {
         "골목대장", "대전러버", "온누리", "시장한바퀴", "단골예약"
     };
+    private static final Duration MAX_LOCATION_EVENT_AGE = Duration.ofMinutes(2);
+    private static final Duration MAX_LOCATION_EVENT_FUTURE = Duration.ofSeconds(15);
 
     private final long seed;
     private final Random runRandom;
@@ -94,7 +96,9 @@ public class MissionRunStateStore {
                 sessionId,
                 nickname,
                 List.copyOf(assignedMissionKeys),
-                missionStates
+                missionStates,
+                new LocationObservationState(),
+                createChallengeState()
         );
         sessions.put(sessionId, session);
         rankingScores.put(
@@ -274,6 +278,43 @@ public class MissionRunStateStore {
         return getMissionState(sessionId, definition);
     }
 
+    public synchronized boolean acceptLocationObservation(
+            String sessionId,
+            Instant recordedAt,
+            Instant receivedAt
+    ) {
+        ParticipantSession session = requireSession(sessionId);
+
+        if (recordedAt == null || receivedAt == null) {
+            throw new IllegalArgumentException("위치 요청 시간은 필수입니다.");
+        }
+
+        if (recordedAt.isBefore(receivedAt.minus(MAX_LOCATION_EVENT_AGE))) {
+            throw new IllegalArgumentException(
+                    "위치 요청이 너무 오래되어 판정할 수 없습니다."
+            );
+        }
+
+        if (recordedAt.isAfter(receivedAt.plus(MAX_LOCATION_EVENT_FUTURE))) {
+            throw new IllegalArgumentException(
+                    "위치 요청 시간이 서버 시간보다 너무 앞서 있습니다."
+            );
+        }
+
+        LocationObservationState observationState
+                = session.locationObservationState();
+
+        if (observationState.lastClientRecordedAt != null
+                && !recordedAt.isAfter(
+                        observationState.lastClientRecordedAt
+                )) {
+            return false;
+        }
+
+        observationState.lastClientRecordedAt = recordedAt;
+        return true;
+    }
+
     public synchronized void recordMarketExit(
             String sessionId,
             MissionDefinition definition
@@ -360,6 +401,53 @@ public class MissionRunStateStore {
         );
     }
 
+    public synchronized ChallengeStateSnapshot getChallengeState(
+            String sessionId
+    ) {
+        ParticipantSession session = requireSession(sessionId);
+        return challengeSnapshot(session.challengeState());
+    }
+
+    public synchronized ChallengeStateSnapshot recordChallengeVisit(
+            String sessionId,
+            LocalDate visitDate
+    ) {
+        ParticipantSession session = requireSession(sessionId);
+        ChallengeState state = session.challengeState();
+
+        if (!state.claimed) {
+            state.visitDates.add(visitDate);
+        }
+
+        return challengeSnapshot(state);
+    }
+
+    public synchronized ChallengeStateSnapshot claimChallengeReward(
+            String sessionId,
+            int rewardPoints
+    ) {
+        ParticipantSession session = requireSession(sessionId);
+        ChallengeState state = session.challengeState();
+        ChallengeStateSnapshot snapshot = challengeSnapshot(state);
+
+        if (snapshot.status() == MissionStatus.CLAIMED) {
+            return snapshot;
+        }
+
+        if (snapshot.status() != MissionStatus.COMPLETED) {
+            throw new IllegalStateException(
+                    "완료한 도전 기록의 보상만 수령할 수 있습니다."
+            );
+        }
+
+        state.claimed = true;
+        RankingScore rankingScore = rankingScores.get(sessionId);
+        rankingScore.weeklyPoints += rewardPoints;
+        rankingScore.monthlyPoints += rewardPoints;
+
+        return challengeSnapshot(state);
+    }
+
     public long getSeed() {
         return seed;
     }
@@ -405,6 +493,51 @@ public class MissionRunStateStore {
                     )
             );
         }
+    }
+
+    private ChallengeState createChallengeState() {
+        ChallengeState state = new ChallengeState();
+        state.visitDates.add(runDate.minusDays(2));
+        state.visitDates.add(runDate.minusDays(1));
+        return state;
+    }
+
+    private ChallengeStateSnapshot challengeSnapshot(ChallengeState state) {
+        int current = 0;
+        LocalDate cursor = state.visitDates.contains(runDate)
+                ? runDate
+                : runDate.minusDays(1);
+
+        while (current < 3 && state.visitDates.contains(cursor)) {
+            current++;
+            cursor = cursor.minusDays(1);
+        }
+
+        MissionStatus status;
+
+        if (state.claimed) {
+            status = MissionStatus.CLAIMED;
+        } else if (current >= 3) {
+            status = MissionStatus.COMPLETED;
+        } else {
+            status = MissionStatus.IN_PROGRESS;
+        }
+
+        List<ChallengeVisitSnapshot> visits = new ArrayList<>();
+
+        for (int index = 0; index < 3; index++) {
+            LocalDate date = runDate.minusDays(2L - index);
+            visits.add(new ChallengeVisitSnapshot(
+                    date,
+                    state.visitDates.contains(date)
+            ));
+        }
+
+        return new ChallengeStateSnapshot(
+                status,
+                current,
+                List.copyOf(visits)
+        );
     }
 
     private ParticipantSession requireSession(String sessionId) {
@@ -530,12 +663,38 @@ public class MissionRunStateStore {
             ) {
     }
 
+    public record ChallengeStateSnapshot(
+            MissionStatus status,
+            int current,
+            List<ChallengeVisitSnapshot> visits
+            ) {
+    }
+
+    public record ChallengeVisitSnapshot(
+            LocalDate date,
+            boolean completed
+            ) {
+    }
+
     private record ParticipantSession(
             String id,
             String nickname,
             List<String> assignedMissionKeys,
-            Map<String, ParticipantMissionState> missionStates
+            Map<String, ParticipantMissionState> missionStates,
+            LocationObservationState locationObservationState,
+            ChallengeState challengeState
             ) {
+    }
+
+    private static final class LocationObservationState {
+
+        private Instant lastClientRecordedAt;
+    }
+
+    private static final class ChallengeState {
+
+        private final Set<LocalDate> visitDates = new LinkedHashSet<>();
+        private boolean claimed;
     }
 
     private static final class ParticipantMissionState {
