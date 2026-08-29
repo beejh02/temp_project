@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { safelyDetachNaverMapObject } from "../lib/naverMapCleanup";
 import "./MapSearch.css";
 
 function MapSearch({ map }) {
@@ -9,7 +10,7 @@ function MapSearch({ map }) {
   useEffect(() => {
     return () => {
       if (markerRef.current) {
-        markerRef.current.setMap(null);
+        safelyDetachNaverMapObject(markerRef.current);
         markerRef.current = null;
       }
     };

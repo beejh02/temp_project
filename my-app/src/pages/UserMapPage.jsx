@@ -8,7 +8,7 @@ import MapDataStatus from "../components/MapDataStatus";
 import MarketPolygon from "../components/MarketPolygon";
 import MissionLayer from "../components/MissionLayer";
 import StoreLayer from "../components/StoreLayer";
-import { MISSION_TARGET_TYPE } from "../data/demoMissions";
+import { MISSION_TARGET_TYPE } from "../data/missionConstants";
 import useMissionDemo from "../hooks/useMissionDemo";
 
 import "../App.css";
@@ -21,7 +21,7 @@ function UserMapPage() {
   const [storeLoadStatus, setStoreLoadStatus] = useState("loading");
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
   const [searchParams] = useSearchParams();
-  const { missions } = useMissionDemo();
+  const { missions, recordMissionLocation } = useMissionDemo();
   const focusedMissionId = searchParams.get("missionId");
   const missionStoreIds = useMemo(
     () =>
@@ -113,7 +113,10 @@ function UserMapPage() {
       />
 
       <MapSearch map={map} />
-      <CurrentLocation map={map} />
+      <CurrentLocation
+        map={map}
+        onMissionLocation={recordMissionLocation}
+      />
     </div>
   );
 }

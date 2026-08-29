@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { safelyDetachNaverMapObject } from "../lib/naverMapCleanup";
 
 function MarketPolygon({ map, coordinates }) {
   const polygonRef = useRef(null);
@@ -11,7 +12,7 @@ function MarketPolygon({ map, coordinates }) {
      * 새로운 좌표로 다시 생성한다.
      */
     if (polygonRef.current) {
-      polygonRef.current.setMap(null);
+      safelyDetachNaverMapObject(polygonRef.current);
       polygonRef.current = null;
     }
 
@@ -62,7 +63,7 @@ function MarketPolygon({ map, coordinates }) {
 
     /* 컴포넌트 제거 시 Polygon 제거 */
     return () => {
-      polygon.setMap(null);
+      safelyDetachNaverMapObject(polygon);
 
       if (polygonRef.current === polygon) {
         polygonRef.current = null;

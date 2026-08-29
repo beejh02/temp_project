@@ -3,12 +3,12 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import MissionIcon from "../components/MissionIcon";
 import MissionPageHeader from "../components/MissionPageHeader";
 import {
-  findDemoMission,
+  findMission,
   MISSION_CATEGORY_LABEL,
   MISSION_STATUS,
   MISSION_STATUS_LABEL,
   MISSION_TARGET_TYPE,
-} from "../data/demoMissions";
+} from "../data/missionConstants";
 import useMissionDemo from "../hooks/useMissionDemo";
 
 import "./MissionSubpage.css";
@@ -24,7 +24,7 @@ function MissionDetailPage() {
     refreshMissions,
     claimMissionReward,
   } = useMissionDemo();
-  const mission = findDemoMission(missionId, missions);
+  const mission = findMission(missionId, missions);
 
   if (loadStatus === "loading") {
     return (

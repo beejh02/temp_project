@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  safelyDetachNaverMapObject,
+  safelyRemoveNaverMapListener,
+} from "../lib/naverMapCleanup";
 
 import {
   MISSION_CATEGORY_LABEL,
   MISSION_STATUS_LABEL,
   MISSION_TARGET_TYPE,
-} from "../data/demoMissions";
+} from "../data/missionConstants";
 
 import "./MissionLayer.css";
 
@@ -353,7 +357,7 @@ function MissionLocationMarker({
     const overlay = createMissionOverlay(map, location, element);
 
     return () => {
-      overlay.setMap(null);
+      safelyDetachNaverMapObject(overlay);
     };
   }, [
     map,
@@ -435,12 +439,13 @@ function MissionLayer({
       return;
     }
 
-    const listener = window.naver.maps.Event.addListener(map, "click", () => {
+    const eventApi = window.naver.maps.Event;
+    const listener = eventApi.addListener(map, "click", () => {
       setSelectedLocationKey(null);
     });
 
     return () => {
-      window.naver.maps.Event.removeListener(listener);
+      safelyRemoveNaverMapListener(eventApi, listener);
     };
   }, [map]);
 

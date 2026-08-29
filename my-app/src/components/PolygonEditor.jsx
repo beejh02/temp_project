@@ -1,4 +1,8 @@
 import { useEffect, useRef } from "react";
+import {
+  safelyDetachNaverMapObject,
+  safelyRemoveNaverMapListener,
+} from "../lib/naverMapCleanup";
 import "./PolygonEditor.css";
 
 function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
@@ -11,7 +15,7 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
   useEffect(() => {
     /* 기존 정점 Marker 제거 */
     markersRef.current.forEach((marker) => {
-      marker.setMap(null);
+      safelyDetachNaverMapObject(marker);
     });
     markersRef.current = [];
 
@@ -31,7 +35,7 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
 
     return () => {
       markers.forEach((marker) => {
-        marker.setMap(null);
+        safelyDetachNaverMapObject(marker);
       });
     };
   }, [map, coordinates]);
@@ -42,7 +46,8 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
     if (!window.naver?.maps) return;
 
     /* 지도 클릭 시 새로운 정점 추가 */
-    const listener = window.naver.maps.Event.addListener(
+    const eventApi = window.naver.maps.Event;
+    const listener = eventApi.addListener(
       map,
       "click",
       (event) => {
@@ -63,7 +68,7 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
     );
 
     return () => {
-      window.naver.maps.Event.removeListener(listener);
+      safelyRemoveNaverMapListener(eventApi, listener);
     };
   }, [map, onChange]);
 

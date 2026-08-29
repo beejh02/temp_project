@@ -651,6 +651,39 @@
   height: 17px;
 }
 
+.challenge-claim-action {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 14px;
+  background: #ec5b2a;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.challenge-claim-action:disabled {
+  background: #e6e2de;
+  color: #8d857d;
+  cursor: default;
+}
+
+.challenge-error {
+  margin: 12px 0 0;
+  color: #b42318;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.mission-refresh-error {
+  margin: 12px 0 0;
+  color: #b42318;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 .ranking-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;

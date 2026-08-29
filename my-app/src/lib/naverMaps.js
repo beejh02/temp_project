@@ -1,11 +1,45 @@
 let naverMapsPromise = null;
+let naverMapsFailure = null;
+const failureListeners = new Set();
+
+function notifyNaverMapsFailure(error) {
+  naverMapsFailure = error;
+  failureListeners.forEach((listener) => listener(error));
+}
+
+function resetNaverMapsSdk() {
+  document.getElementById("naver-maps-sdk")?.remove();
+  delete window.__nurigoNaverMapsReady;
+  delete window.navermap_authFailure;
+
+  try {
+    delete window.naver;
+  } catch {
+    window.naver = undefined;
+  }
+
+  naverMapsPromise = null;
+  naverMapsFailure = null;
+}
 
 export function getNaverMapStyleId() {
   return import.meta.env.VITE_NAVER_MAP_STYLE_ID?.trim() || "";
 }
 
-export function loadNaverMaps() {
-  if (window.naver?.maps) {
+export function subscribeNaverMapsFailure(listener) {
+  failureListeners.add(listener);
+
+  return () => {
+    failureListeners.delete(listener);
+  };
+}
+
+export function loadNaverMaps({ forceReload = false } = {}) {
+  if (forceReload) {
+    resetNaverMapsSdk();
+  }
+
+  if (window.naver?.maps && !naverMapsFailure) {
     return Promise.resolve(window.naver.maps);
   }
 
@@ -21,12 +55,12 @@ export function loadNaverMaps() {
       return;
     }
 
-    const styleId = getNaverMapStyleId();
     const callbackName = "__nurigoNaverMapsReady";
     const script = document.createElement("script");
     const parameters = new URLSearchParams({
       ncpKeyId: clientId,
-      submodules: styleId ? "gl" : "geocoder",
+      // 래스터 지도의 HTTP 타일 대신 HTTPS 기반 GL 지도를 사용한다.
+      submodules: "gl,geocoder",
       callback: callbackName,
     });
 
@@ -44,7 +78,12 @@ export function loadNaverMaps() {
     window.navermap_authFailure = () => {
       delete window[callbackName];
       naverMapsPromise = null;
-      reject(new Error("네이버 지도 API 인증에 실패했습니다."));
+      const error = new Error(
+        "네이버 지도 서버에 연결하지 못했습니다. 잠시 후 다시 시도해주세요.",
+      );
+
+      notifyNaverMapsFailure(error);
+      reject(error);
     };
 
     script.id = "naver-maps-sdk";
@@ -53,7 +92,12 @@ export function loadNaverMaps() {
     script.onerror = () => {
       delete window[callbackName];
       naverMapsPromise = null;
-      reject(new Error("네이버 지도 API를 불러오지 못했습니다."));
+      const error = new Error(
+        "네이버 지도 서버에 연결하지 못했습니다. 네트워크를 확인해주세요.",
+      );
+
+      notifyNaverMapsFailure(error);
+      reject(error);
     };
 
     document.head.appendChild(script);

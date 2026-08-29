@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import useMissionDemo from "../hooks/useMissionDemo";
+import { safelyDetachNaverMapObject } from "../lib/naverMapCleanup";
 import "./CurrentLocation.css";
 
 const INITIAL_MOVE_STEP = 0.00005;
 const MIN_MOVE_STEP = 0.000005;
 const MAX_MOVE_STEP = 0.001;
 const MISSION_LOCATION_HEARTBEAT_MS = 10000;
+const MISSION_LOCATION_THROTTLE_MS = 1000;
 
 /*
  * 현재 좌표가 어느 시장에 포함되는지 Backend에 조회
@@ -28,13 +29,15 @@ async function fetchMarketsAtLocation(latitude, longitude) {
   }
 }
 
-function CurrentLocation({ map }) {
+function CurrentLocation({ map, onMissionLocation }) {
   const markerRef = useRef(null);
   const positionRef = useRef(null);
   const moveStepRef = useRef(INITIAL_MOVE_STEP);
   const watchIdRef = useRef(null);
   const simulationModeRef = useRef(false);
-  const { recordMissionLocation } = useMissionDemo();
+  const lastMissionSubmissionAtRef = useRef(0);
+  const pendingMissionLocationRef = useRef(null);
+  const missionSubmissionTimerRef = useRef(null);
 
   /*
    * 현재 들어가 있는 시장 ID
@@ -51,16 +54,48 @@ function CurrentLocation({ map }) {
 
   const submitMissionLocation = useCallback(
     (latitude, longitude, accuracy = 5) => {
-      recordMissionLocation({
+      if (!onMissionLocation) {
+        return;
+      }
+
+      const location = {
         latitude,
         longitude,
         accuracy,
         recordedAt: new Date().toISOString(),
-      }).catch((error) => {
-        console.error("미션 위치 판정 중 오류:", error);
-      });
+      };
+      const submit = (nextLocation) => {
+        lastMissionSubmissionAtRef.current = Date.now();
+        onMissionLocation(nextLocation).catch((error) => {
+          console.error("미션 위치 판정 중 오류:", error);
+          setMessage(error.message || "현재 위치를 미션에 반영하지 못했습니다.");
+        });
+      };
+      const elapsed = Date.now() - lastMissionSubmissionAtRef.current;
+
+      if (elapsed >= MISSION_LOCATION_THROTTLE_MS) {
+        pendingMissionLocationRef.current = null;
+        window.clearTimeout(missionSubmissionTimerRef.current);
+        missionSubmissionTimerRef.current = null;
+        submit(location);
+        return;
+      }
+
+      pendingMissionLocationRef.current = location;
+
+      if (missionSubmissionTimerRef.current == null) {
+        missionSubmissionTimerRef.current = window.setTimeout(() => {
+          const pendingLocation = pendingMissionLocationRef.current;
+          pendingMissionLocationRef.current = null;
+          missionSubmissionTimerRef.current = null;
+
+          if (pendingLocation) {
+            submit(pendingLocation);
+          }
+        }, MISSION_LOCATION_THROTTLE_MS - elapsed);
+      }
     },
-    [recordMissionLocation],
+    [onMissionLocation],
   );
 
   useEffect(() => {
@@ -120,12 +155,17 @@ function CurrentLocation({ map }) {
   useEffect(() => {
     return () => {
       if (markerRef.current) {
-        markerRef.current.setMap(null);
+        safelyDetachNaverMapObject(markerRef.current);
         markerRef.current = null;
       }
 
       if (entryMessageTimerRef.current) {
         clearTimeout(entryMessageTimerRef.current);
+      }
+
+      if (missionSubmissionTimerRef.current) {
+        clearTimeout(missionSubmissionTimerRef.current);
+        missionSubmissionTimerRef.current = null;
       }
 
       if (watchIdRef.current != null && navigator.geolocation) {

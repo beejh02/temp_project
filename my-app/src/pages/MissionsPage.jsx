@@ -6,7 +6,7 @@ import {
   MISSION_GROUP,
   MISSION_STATUS,
   MISSION_STATUS_LABEL,
-} from "../data/demoMissions";
+} from "../data/missionConstants";
 import useMissionDemo from "../hooks/useMissionDemo";
 
 import "./MissionsPage.css";

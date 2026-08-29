@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  safelyDetachNaverMapObject,
+  safelyRemoveNaverMapListener,
+} from "../lib/naverMapCleanup";
 import { getDominantStoreCategory } from "./storeCategories";
 import "./StoreLayer.css";
 
@@ -218,7 +222,7 @@ function StoreLocationMarker({
     const overlay = createStoreOverlay(map, group, element);
 
     return () => {
-      overlay.setMap(null);
+      safelyDetachNaverMapObject(overlay);
     };
   }, [map, group, selected, selectedStoreId, onToggle, onStoreSelect]);
 
@@ -353,7 +357,8 @@ function StoreLayer({
       return;
     }
 
-    const listener = window.naver.maps.Event.addListener(
+    const eventApi = window.naver.maps.Event;
+    const listener = eventApi.addListener(
       map,
       "zoom_changed",
       () => {
@@ -363,7 +368,7 @@ function StoreLayer({
     );
 
     return () => {
-      window.naver.maps.Event.removeListener(listener);
+      safelyRemoveNaverMapListener(eventApi, listener);
     };
   }, [map]);
 

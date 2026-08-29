@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import MissionDemoContext from "../contexts/missionDemoContext";
 
+const MISSION_POLLING_MS = 7500;
+
 const initialState = {
   missions: [],
   loadStatus: "loading",
@@ -59,6 +61,13 @@ function missionDemoReducer(state, action) {
     };
   }
 
+  if (action.type === "refresh-error") {
+    return {
+      ...state,
+      errorMessage: action.message,
+    };
+  }
+
   return state;
 }
 
@@ -79,9 +88,14 @@ async function requestJson(url, options) {
 function MissionDemoProvider({ children }) {
   const [state, dispatch] = useReducer(missionDemoReducer, initialState);
   const locationQueueRef = useRef(Promise.resolve());
+  const requestVersionRef = useRef(0);
 
-  const loadMissions = useCallback(async () => {
-    dispatch({ type: "load" });
+  const loadMissions = useCallback(async ({ silent = false } = {}) => {
+    const requestVersion = ++requestVersionRef.current;
+
+    if (!silent) {
+      dispatch({ type: "load" });
+    }
 
     try {
       const missions = await requestJson("/api/missions/daily");
@@ -90,12 +104,16 @@ function MissionDemoProvider({ children }) {
         throw new Error("미션 목록 응답 형식이 올바르지 않습니다.");
       }
 
-      dispatch({ type: "replace", missions });
+      if (requestVersion === requestVersionRef.current) {
+        dispatch({ type: "replace", missions });
+      }
     } catch (error) {
-      dispatch({
-        type: "load-error",
-        message: error.message || "미션 목록을 불러오지 못했습니다.",
-      });
+      if (requestVersion === requestVersionRef.current) {
+        dispatch({
+          type: silent ? "refresh-error" : "load-error",
+          message: error.message || "미션 목록을 불러오지 못했습니다.",
+        });
+      }
     }
   }, []);
 
@@ -103,7 +121,51 @@ function MissionDemoProvider({ children }) {
     loadMissions();
   }, [loadMissions]);
 
+  useEffect(() => {
+    let disposed = false;
+    let timerId = null;
+    let polling = false;
+
+    const scheduleNext = () => {
+      if (!disposed) {
+        timerId = window.setTimeout(poll, MISSION_POLLING_MS);
+      }
+    };
+
+    const poll = async () => {
+      if (polling) {
+        return;
+      }
+
+      polling = true;
+
+      if (document.visibilityState !== "hidden") {
+        await loadMissions({ silent: true });
+      }
+
+      polling = false;
+      scheduleNext();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        window.clearTimeout(timerId);
+        poll();
+      }
+    };
+
+    scheduleNext();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(timerId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [loadMissions]);
+
   const runMissionAction = useCallback(async (missionId, action) => {
+    ++requestVersionRef.current;
     dispatch({ type: "operation-start", missionId });
 
     try {
@@ -111,6 +173,7 @@ function MissionDemoProvider({ children }) {
         `/api/missions/${missionId}/${action}`,
         { method: "POST" },
       );
+      ++requestVersionRef.current;
       dispatch({ type: "operation-success", mission });
 
       return mission;
@@ -125,6 +188,7 @@ function MissionDemoProvider({ children }) {
 
   const recordMissionLocation = useCallback((location) => {
     const request = locationQueueRef.current.then(async () => {
+      ++requestVersionRef.current;
       const missions = await requestJson("/api/missions/location", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -135,6 +199,7 @@ function MissionDemoProvider({ children }) {
         throw new Error("위치 판정 응답 형식이 올바르지 않습니다.");
       }
 
+      ++requestVersionRef.current;
       dispatch({ type: "replace", missions });
 
       return missions;

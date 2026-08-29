@@ -11,6 +11,8 @@ const RANKING_PERIODS = {
   monthly: "월간",
 };
 
+const RANKING_POLLING_MS = 7500;
+
 function MissionRankingsPage() {
   const [periodType, setPeriodType] = useState("weekly");
   const [ranking, setRanking] = useState(null);
@@ -27,11 +29,35 @@ function MissionRankingsPage() {
       return undefined;
     }
 
-    const abortController = new AbortController();
+    let disposed = false;
+    let timerId = null;
+    let abortController = null;
+    let loading = false;
+    let hasLoaded = false;
 
-    const loadRanking = async () => {
-      setRankingStatus("loading");
-      setRankingError("");
+    const scheduleNext = () => {
+      if (!disposed) {
+        timerId = window.setTimeout(loadRanking, RANKING_POLLING_MS);
+      }
+    };
+
+    const loadRanking = async (showLoading = false) => {
+      if (loading) {
+        return;
+      }
+
+      if (document.visibilityState === "hidden") {
+        scheduleNext();
+        return;
+      }
+
+      loading = true;
+      abortController = new AbortController();
+
+      if (showLoading) {
+        setRankingStatus("loading");
+        setRankingError("");
+      }
 
       try {
         const response = await fetch(
@@ -49,19 +75,42 @@ function MissionRankingsPage() {
           );
         }
 
-        setRanking(data);
-        setRankingStatus("success");
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          setRankingError(error.message || "랭킹을 불러오지 못했습니다.");
-          setRankingStatus("error");
+        if (!disposed) {
+          setRanking(data);
+          setRankingStatus("success");
+          setRankingError("");
+          hasLoaded = true;
         }
+      } catch (error) {
+        if (!disposed && error.name !== "AbortError") {
+          setRankingError(error.message || "랭킹을 불러오지 못했습니다.");
+
+          if (!hasLoaded) {
+            setRankingStatus("error");
+          }
+        }
+      } finally {
+        loading = false;
+        scheduleNext();
       }
     };
 
-    loadRanking();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        window.clearTimeout(timerId);
+        loadRanking();
+      }
+    };
 
-    return () => abortController.abort();
+    loadRanking(true);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(timerId);
+      abortController?.abort();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [loadStatus, periodType]);
 
   return (
@@ -108,6 +157,12 @@ function MissionRankingsPage() {
 
         {displayStatus === "success" && ranking && (
           <RankingContent ranking={ranking} />
+        )}
+
+        {displayStatus === "success" && rankingError && (
+          <p className="mission-refresh-error" role="alert">
+            {rankingError}
+          </p>
         )}
 
         <aside className="ranking-note">

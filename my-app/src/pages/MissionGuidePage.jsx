@@ -4,7 +4,7 @@ import {
   missionCategoryGuides,
   MISSION_STATUS,
   MISSION_STATUS_LABEL,
-} from "../data/demoMissions";
+} from "../data/missionConstants";
 
 import "./MissionSubpage.css";
 
