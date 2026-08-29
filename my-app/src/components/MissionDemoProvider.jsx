@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-
+import { apiUrl } from "../utils/api";
 import MissionDemoContext from "../contexts/missionDemoContext";
 
 const MISSION_POLLING_MS = 7500;
@@ -72,10 +72,11 @@ function missionDemoReducer(state, action) {
 }
 
 async function requestJson(url, options) {
-  const response = await fetch(url, {
+  const response = await fetch(apiUrl(url), {
     credentials: "same-origin",
     ...options,
   });
+
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -223,8 +224,7 @@ function MissionDemoProvider({ children }) {
       pendingMissionId: state.pendingMissionId,
       refreshMissions: loadMissions,
       recordMissionLocation,
-      claimMissionReward: (missionId) =>
-        runMissionAction(missionId, "claim"),
+      claimMissionReward: (missionId) => runMissionAction(missionId, "claim"),
     }),
     [state, loadMissions, recordMissionLocation, runMissionAction],
   );

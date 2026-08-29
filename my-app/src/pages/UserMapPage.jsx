@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-
+import { apiUrl } from "../utils/api";
 import NaverMap from "../components/NaverMap";
 import MapSearch from "../components/MapSearch";
 import CurrentLocation from "../components/CurrentLocation";
@@ -41,7 +41,7 @@ function UserMapPage() {
       setMarketLoadStatus("loading");
 
       try {
-        const response = await fetch("/api/markets", {
+        const response = await fetch(apiUrl("/api/markets"), {
           signal: abortController.signal,
         });
 
@@ -113,10 +113,7 @@ function UserMapPage() {
       />
 
       <MapSearch map={map} />
-      <CurrentLocation
-        map={map}
-        onMissionLocation={recordMissionLocation}
-      />
+      <CurrentLocation map={map} onMissionLocation={recordMissionLocation} />
     </div>
   );
 }

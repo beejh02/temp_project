@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import "./StoreImportPanel.css";
+import { apiUrl } from "../utils/api";
 
 function StoreImportPanel({ onImported }) {
   const fileInputRef = useRef(null);
@@ -20,7 +21,7 @@ function StoreImportPanel({ onImported }) {
     setMessage("점포 데이터를 가져오고 있습니다.");
 
     try {
-      const response = await fetch("/api/stores/import", {
+      const response = await fetch(apiUrl("/api/stores/import"), {
         method: "POST",
         body: formData,
       });

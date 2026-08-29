@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-
+import { apiUrl } from "../utils/api";
 import MissionIcon from "../components/MissionIcon";
 import MissionPageHeader from "../components/MissionPageHeader";
-import {
-  MISSION_STATUS,
-  MISSION_STATUS_LABEL,
-} from "../data/missionConstants";
+import { MISSION_STATUS, MISSION_STATUS_LABEL } from "../data/missionConstants";
 
 import "./MissionSubpage.css";
 
 const CHALLENGE_POLLING_MS = 7500;
 
 async function requestJson(url, options) {
-  const response = await fetch(url, {
+  const response = await fetch(apiUrl, {
     credentials: "same-origin",
     ...options,
   });
@@ -144,17 +141,20 @@ function MissionChallengesPage() {
           </section>
         )}
 
-        {status === "success" && challenges.map((challenge) => (
-          <ChallengeRecord
-            challenge={challenge}
-            key={challenge.id}
-            pending={pendingChallengeId === challenge.id}
-            onClaim={handleClaim}
-          />
-        ))}
+        {status === "success" &&
+          challenges.map((challenge) => (
+            <ChallengeRecord
+              challenge={challenge}
+              key={challenge.id}
+              pending={pendingChallengeId === challenge.id}
+              onClaim={handleClaim}
+            />
+          ))}
 
         {status === "success" && errorMessage && (
-          <p className="challenge-error" role="alert">{errorMessage}</p>
+          <p className="challenge-error" role="alert">
+            {errorMessage}
+          </p>
         )}
 
         <aside className="challenge-tip">

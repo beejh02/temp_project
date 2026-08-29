@@ -4,6 +4,7 @@ import {
   safelyRemoveNaverMapListener,
 } from "../lib/naverMapCleanup";
 import "./PolygonEditor.css";
+import { apiUrl } from "../utils/api";
 
 function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
   const markersRef = useRef([]);
@@ -47,25 +48,21 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
 
     /* 지도 클릭 시 새로운 정점 추가 */
     const eventApi = window.naver.maps.Event;
-    const listener = eventApi.addListener(
-      map,
-      "click",
-      (event) => {
-        const lat = event.coord.lat();
-        const lng = event.coord.lng();
+    const listener = eventApi.addListener(map, "click", (event) => {
+      const lat = event.coord.lat();
+      const lng = event.coord.lng();
 
-        const newPoint = {
-          lat,
-          lng,
-        };
+      const newPoint = {
+        lat,
+        lng,
+      };
 
-        /*
-         * 부모(AdminMapPage)가 관리하는
-         * marketBoundary 상태 변경
-         */
-        onChange((previousCoordinates) => [...previousCoordinates, newPoint]);
-      },
-    );
+      /*
+       * 부모(AdminMapPage)가 관리하는
+       * marketBoundary 상태 변경
+       */
+      onChange((previousCoordinates) => [...previousCoordinates, newPoint]);
+    });
 
     return () => {
       safelyRemoveNaverMapListener(eventApi, listener);
@@ -126,7 +123,7 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
     };
 
     try {
-      const response = await fetch("/api/markets", {
+      const response = await fetch(apiUrl("/api/markets"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

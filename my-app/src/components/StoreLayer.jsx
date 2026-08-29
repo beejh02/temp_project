@@ -5,6 +5,7 @@ import {
 } from "../lib/naverMapCleanup";
 import { getDominantStoreCategory } from "./storeCategories";
 import "./StoreLayer.css";
+import { apiUrl } from "../utils/api";
 
 const MAP_INTERACTION_EVENTS = ["pointerdown", "mousedown", "touchstart"];
 const CATEGORY_MARKER_THRESHOLD = 20;
@@ -320,7 +321,7 @@ function StoreLayer({
       onLoadStateChange?.("loading");
 
       try {
-        const response = await fetch("/api/stores/in-markets", {
+        const response = await fetch(apiUrl("/api/stores/in-markets"), {
           signal: abortController.signal,
         });
 
