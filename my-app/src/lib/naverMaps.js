@@ -59,8 +59,7 @@ export function loadNaverMaps({ forceReload = false } = {}) {
     const script = document.createElement("script");
     const parameters = new URLSearchParams({
       ncpKeyId: clientId,
-      // 래스터 지도의 HTTP 타일 대신 HTTPS 기반 GL 지도를 사용한다.
-      submodules: "gl,geocoder",
+      submodules: "geocoder",
       callback: callbackName,
     });
 

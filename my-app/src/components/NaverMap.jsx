@@ -53,7 +53,6 @@ function NaverMap({ onMapReady }) {
         const mapOptions = {
           center,
           zoom: 16,
-          gl: true,
           zoomControl: true,
           zoomControlOptions: {
             position: mapsApi.Position.TOP_RIGHT,

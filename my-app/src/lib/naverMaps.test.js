@@ -15,7 +15,7 @@ describe("네이버 지도 SDK 로더", () => {
     const script = document.getElementById("naver-maps-sdk");
 
     expect(script).not.toBeNull();
-    expect(script.src).toContain("submodules=gl%2Cgeocoder");
+    expect(script.src).toContain("submodules=geocoder");
 
     window.naver = { maps: { Map: class Map {} } };
     window.__nurigoNaverMapsReady();
