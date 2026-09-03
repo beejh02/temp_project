@@ -64,7 +64,6 @@ function MissionRankingsPage() {
         const response = await apiFetch(
           `/api/missions/rankings?period=${periodType}`,
           {
-            credentials: "same-origin",
             signal: abortController.signal,
           },
         );

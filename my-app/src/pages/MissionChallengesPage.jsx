@@ -10,7 +10,6 @@ const CHALLENGE_POLLING_MS = 7500;
 
 async function requestJson(url, options) {
   const response = await apiFetch(url, {
-    credentials: "same-origin",
     ...options,
   });
   const data = await response.json().catch(() => null);

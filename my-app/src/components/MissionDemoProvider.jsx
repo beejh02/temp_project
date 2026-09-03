@@ -73,7 +73,6 @@ function missionDemoReducer(state, action) {
 
 async function requestJson(url, options) {
   const response = await apiFetch(url, {
-    credentials: "same-origin",
     ...options,
   });
 
