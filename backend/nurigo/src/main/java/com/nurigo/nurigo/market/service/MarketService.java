@@ -5,6 +5,7 @@ import java.util.List;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nurigo.nurigo.market.dto.MarketCreateRequest;
 import com.nurigo.nurigo.market.dto.MarketResponse;
@@ -26,16 +27,40 @@ public class MarketService {
         this.marketGeometryMapper = marketGeometryMapper;
     }
 
+    @Transactional
     public Market create(MarketCreateRequest request) {
+        String name = normalizeName(request.name());
+        ensureNameAvailable(name, null);
         Polygon boundary
                 = marketGeometryMapper.toPolygon(request.boundary());
 
         Market market = new Market(
-                request.name(),
+                name,
                 boundary
         );
 
         return marketRepository.save(market);
+    }
+
+    @Transactional
+    public MarketResponse update(
+            Long marketId,
+            MarketCreateRequest request
+    ) {
+        Market market = requireMarket(marketId);
+        String name = normalizeName(request.name());
+        ensureNameAvailable(name, marketId);
+        Polygon boundary
+                = marketGeometryMapper.toPolygon(request.boundary());
+
+        market.update(name, boundary);
+
+        return toResponse(marketRepository.save(market));
+    }
+
+    @Transactional
+    public void delete(Long marketId) {
+        marketRepository.delete(requireMarket(marketId));
     }
 
     public List<MarketResponse> findAll() {
@@ -54,6 +79,32 @@ public class MarketService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    private Market requireMarket(Long marketId) {
+        return marketRepository.findById(marketId)
+                .orElseThrow(() -> new MarketNotFoundException(marketId));
+    }
+
+    private String normalizeName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("시장 이름은 필수입니다.");
+        }
+
+        return name.trim();
+    }
+
+    private void ensureNameAvailable(String name, Long excludedMarketId) {
+        boolean duplicate = excludedMarketId == null
+                ? marketRepository.existsByNameIgnoreCase(name)
+                : marketRepository.existsByNameIgnoreCaseAndIdNot(
+                        name,
+                        excludedMarketId
+                );
+
+        if (duplicate) {
+            throw new DuplicateMarketNameException(name);
+        }
     }
 
     private MarketResponse toResponse(Market market) {

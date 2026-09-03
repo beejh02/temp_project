@@ -10,6 +10,10 @@ import com.nurigo.nurigo.market.entity.Market;
 
 public interface MarketRepository extends JpaRepository<Market, Long> {
 
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
     @Query(
             value = """
                     SELECT *

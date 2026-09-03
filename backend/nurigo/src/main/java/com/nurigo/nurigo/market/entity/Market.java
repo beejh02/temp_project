@@ -46,6 +46,11 @@ public class Market {
         this.boundary = boundary;
     }
 
+    public void update(String name, Polygon boundary) {
+        this.name = name;
+        this.boundary = boundary;
+    }
+
     public Long getId() {
         return id;
     }

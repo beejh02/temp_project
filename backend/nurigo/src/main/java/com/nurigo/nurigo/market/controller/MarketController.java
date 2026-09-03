@@ -5,7 +5,10 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -44,6 +47,23 @@ public class MarketController {
         return ResponseEntity.ok(
                 marketService.findAll()
         );
+    }
+
+    @PutMapping("/{marketId}")
+    public ResponseEntity<MarketResponse> updateMarket(
+            @PathVariable Long marketId,
+            @Valid @RequestBody MarketCreateRequest request
+    ) {
+        return ResponseEntity.ok(marketService.update(marketId, request));
+    }
+
+    @DeleteMapping("/{marketId}")
+    public ResponseEntity<Void> deleteMarket(
+            @PathVariable Long marketId
+    ) {
+        marketService.delete(marketId);
+
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/location")
