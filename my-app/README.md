@@ -12,10 +12,12 @@ Vercel 프로젝트에는 다음 환경변수를 설정한다. 운영 Render 주
 ```text
 VITE_NAVER_MAP_CLIENT_ID=your_naver_maps_client_id
 VITE_NAVER_MAP_STYLE_ID=your_optional_style_id
+VITE_API_MODE=proxy
 ```
 
-프록시를 사용할 때 `VITE_API_BASE_URL`은 설정하지 않는다. `/api` rewrite는
-SPA catch-all보다 먼저 적용되며 API 응답을 캐시하지 않는다.
+프록시를 사용할 때 `VITE_API_BASE_URL`은 설정하지 않는다. 값이 기존 배포
+설정에 남아 있어도 `VITE_API_MODE=direct`를 명시하지 않으면 무시된다.
+`/api` rewrite는 SPA catch-all보다 먼저 적용되며 API 응답을 캐시하지 않는다.
 
 Render 프로젝트에는 다음 환경변수를 설정한다.
 
@@ -26,7 +28,7 @@ SESSION_COOKIE_SAME_SITE=Lax
 ```
 
 Render를 브라우저에서 직접 호출해야 하는 경우에만 Vercel의
-`VITE_API_BASE_URL`을 Render 주소로 설정하고, Render의
+`VITE_API_MODE=direct`와 `VITE_API_BASE_URL`을 함께 설정하고, Render의
 `SESSION_COOKIE_SAME_SITE=None`을 사용한다. 직접 호출 모드는 브라우저의
 서드파티 쿠키 제한을 받을 수 있으므로 기본 배포 방식으로 사용하지 않는다.
 
