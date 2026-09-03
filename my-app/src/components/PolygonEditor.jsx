@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   safelyDetachNaverMapObject,
   safelyRemoveNaverMapListener,
@@ -6,24 +6,34 @@ import {
 import "./PolygonEditor.css";
 import { apiFetch } from "../utils/api";
 
-function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
+function PolygonEditor({
+  map,
+  name,
+  coordinates,
+  markets = [],
+  selectedMarketId,
+  loadError,
+  onNameChange,
+  onChange,
+  onMarketSelect,
+  onSaved,
+  onDeleted,
+}) {
   const markersRef = useRef([]);
+  const [pendingAction, setPendingAction] = useState("");
+  const [feedback, setFeedback] = useState(null);
+  const isEditing = selectedMarketId != null;
 
-  /*
-   * 현재 coordinates를 기준으로
-   * 정점 Marker를 다시 표시한다.
-   */
   useEffect(() => {
-    /* 기존 정점 Marker 제거 */
     markersRef.current.forEach((marker) => {
       safelyDetachNaverMapObject(marker);
     });
     markersRef.current = [];
 
-    if (!map) return;
-    if (!window.naver?.maps) return;
+    if (!map || !window.naver?.maps) {
+      return undefined;
+    }
 
-    /* 각 Polygon 정점 위치에 Marker 생성 */
     const markers = coordinates.map(
       ({ lat, lng }) =>
         new window.naver.maps.Marker({
@@ -41,27 +51,22 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
     };
   }, [map, coordinates]);
 
-  /* 지도 클릭 이벤트 등록 */
   useEffect(() => {
-    if (!map) return;
-    if (!window.naver?.maps) return;
+    if (!map || !window.naver?.maps) {
+      return undefined;
+    }
 
-    /* 지도 클릭 시 새로운 정점 추가 */
     const eventApi = window.naver.maps.Event;
     const listener = eventApi.addListener(map, "click", (event) => {
-      const lat = event.coord.lat();
-      const lng = event.coord.lng();
-
       const newPoint = {
-        lat,
-        lng,
+        lat: event.coord.lat(),
+        lng: event.coord.lng(),
       };
 
-      /*
-       * 부모(AdminMapPage)가 관리하는
-       * marketBoundary 상태 변경
-       */
-      onChange((previousCoordinates) => [...previousCoordinates, newPoint]);
+      onChange((previousCoordinates) => [
+        ...previousCoordinates,
+        newPoint,
+      ]);
     });
 
     return () => {
@@ -69,88 +74,152 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
     };
   }, [map, onChange]);
 
-  /* 가장 마지막에 추가한 정점 제거 */
   const handleUndo = () => {
     onChange((previousCoordinates) => previousCoordinates.slice(0, -1));
   };
 
-  /* 모든 정점 제거 */
   const handleReset = () => {
     onChange([]);
   };
 
-  /* Polygon 저장 */
+  const handleMarketSelect = (event) => {
+    const value = event.target.value;
+
+    setFeedback(null);
+    onMarketSelect(value ? Number(value) : null);
+  };
+
   const handleSave = async () => {
     const trimmedName = name.trim();
 
     if (!trimmedName) {
-      alert("시장 이름을 입력해주세요.");
+      setFeedback({ type: "error", message: "시장 이름을 입력해주세요." });
       return;
     }
 
     if (coordinates.length < 3) {
-      alert("Polygon은 최소 3개의 정점이 필요합니다.");
+      setFeedback({
+        type: "error",
+        message: "Polygon은 최소 3개의 정점이 필요합니다.",
+      });
       return;
     }
 
-    /*
-     * 애플리케이션 좌표
-     * { lat, lng }
-     * ↓
-     * GeoJSON 좌표
-     * [lng, lat]
-     */
     const geoJsonCoordinates = coordinates.map(({ lat, lng }) => [lng, lat]);
 
-    /*
-     * GeoJSON Polygon의 LinearRing은
-     * 첫 좌표와 마지막 좌표가 동일해야 한다.
-     */
     geoJsonCoordinates.push([
       geoJsonCoordinates[0][0],
       geoJsonCoordinates[0][1],
     ]);
 
-    /* GeoJSON Polygon 생성 */
-    const boundary = {
-      type: "Polygon",
-      coordinates: [geoJsonCoordinates],
-    };
-
     const marketData = {
       name: trimmedName,
-      boundary,
+      boundary: {
+        type: "Polygon",
+        coordinates: [geoJsonCoordinates],
+      },
     };
 
     try {
-      const response = await apiFetch("/api/markets", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      setPendingAction("save");
+      setFeedback(null);
+      const response = await apiFetch(
+        isEditing
+          ? `/api/markets/${selectedMarketId}`
+          : "/api/markets",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(marketData),
         },
-        body: JSON.stringify(marketData),
+      );
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || `시장 저장 실패: ${response.status}`,
+        );
+      }
+
+      const marketId = isEditing ? data.id : data;
+
+      await onSaved(marketId);
+      setFeedback({
+        type: "success",
+        message: `${trimmedName} ${isEditing ? "수정" : "등록"} 완료`,
+      });
+    } catch (error) {
+      console.error("시장 저장 중 오류:", error);
+      setFeedback({
+        type: "error",
+        message: error.message || "시장 저장에 실패했습니다.",
+      });
+    } finally {
+      setPendingAction("");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!isEditing) {
+      return;
+    }
+
+    if (!window.confirm(`${name} 시장을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      setPendingAction("delete");
+      setFeedback(null);
+      const response = await apiFetch(`/api/markets/${selectedMarketId}`, {
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error(`시장 저장 실패: ${response.status}`);
+        const data = await response.json().catch(() => null);
+
+        throw new Error(
+          data?.message || `시장 삭제 실패: ${response.status}`,
+        );
       }
 
-      const marketId = await response.json();
-
-      console.log("저장된 시장 ID:", marketId);
-
-      alert(`${trimmedName} 저장 완료 (ID: ${marketId})`);
+      await onDeleted(selectedMarketId);
+      setFeedback({
+        type: "success",
+        message: `${name} 삭제 완료`,
+      });
     } catch (error) {
-      console.error("시장 저장 중 오류:", error);
-      alert("시장 저장에 실패했습니다.");
+      console.error("시장 삭제 중 오류:", error);
+      setFeedback({
+        type: "error",
+        message: error.message || "시장 삭제에 실패했습니다.",
+      });
+    } finally {
+      setPendingAction("");
     }
   };
 
   return (
     <div className="polygon-editor">
       <div className="polygon-editor-name">
-        <label htmlFor="market-name">시장 이름</label>
+        <label htmlFor="market-select">관리할 시장</label>
+        <select
+          id="market-select"
+          value={selectedMarketId ?? ""}
+          onChange={handleMarketSelect}
+          disabled={pendingAction !== ""}
+        >
+          <option value="">새 시장 등록</option>
+          {markets.map((market) => (
+            <option key={market.id} value={market.id}>
+              {market.name}
+            </option>
+          ))}
+        </select>
 
+        <label htmlFor="market-name">시장 이름</label>
         <input
           id="market-name"
           type="text"
@@ -158,36 +227,66 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
           onChange={(event) => onNameChange(event.target.value)}
           placeholder="예: 대전 중앙시장"
           maxLength={100}
+          disabled={pendingAction !== ""}
         />
       </div>
 
-      <div className="polygon-editor-info">정점 {coordinates.length}개</div>
+      <div className="polygon-editor-info">
+        {isEditing ? "선택 시장 수정" : "새 시장 등록"} · 정점{
+          ` ${coordinates.length}개`
+        }
+      </div>
+
+      {(loadError || feedback) && (
+        <p
+          className={`polygon-editor-feedback is-${
+            feedback?.type || "error"
+          }`}
+          role={feedback?.type === "success" ? "status" : "alert"}
+        >
+          {feedback?.message || loadError}
+        </p>
+      )}
 
       <div className="polygon-editor-actions">
         <button
           type="button"
           onClick={handleUndo}
-          disabled={coordinates.length === 0}
+          disabled={coordinates.length === 0 || pendingAction !== ""}
         >
           되돌리기
         </button>
-
         <button
           type="button"
           onClick={handleReset}
-          disabled={coordinates.length === 0}
+          disabled={coordinates.length === 0 || pendingAction !== ""}
         >
           초기화
         </button>
-
         <button
           type="button"
           className="polygon-save-button"
           onClick={handleSave}
-          disabled={!name.trim() || coordinates.length < 3}
+          disabled={
+            !name.trim()
+            || coordinates.length < 3
+            || pendingAction !== ""
+          }
         >
-          저장
+          {pendingAction === "save"
+            ? "저장 중..."
+            : isEditing ? "수정" : "등록"}
         </button>
+        {isEditing && (
+          <button
+            type="button"
+            className="polygon-delete-button"
+            onClick={handleDelete}
+            disabled={pendingAction !== ""}
+          >
+            {pendingAction === "delete" ? "삭제 중..." : "삭제"}
+          </button>
+        )}
       </div>
     </div>
   );

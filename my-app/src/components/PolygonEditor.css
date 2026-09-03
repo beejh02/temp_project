@@ -35,7 +35,21 @@
   outline: none;
 }
 
-.polygon-editor-name input:focus {
+.polygon-editor-name select {
+  width: 220px;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  font-size: 13px;
+  outline: none;
+}
+
+.polygon-editor-name input:focus,
+.polygon-editor-name select:focus {
   border-color: #03c75a;
 }
 
@@ -48,7 +62,9 @@
 
 .polygon-editor-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  max-width: 220px;
 }
 
 .polygon-editor-actions button {
@@ -88,6 +104,30 @@
   color: white;
 }
 
+.polygon-editor-actions .polygon-delete-button {
+  border-color: #e15c5c;
+  color: #c93636;
+}
+
+.polygon-editor-actions .polygon-delete-button:hover:not(:disabled) {
+  background: #fff1f1;
+}
+
+.polygon-editor-feedback {
+  max-width: 220px;
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.polygon-editor-feedback.is-error {
+  color: #c93636;
+}
+
+.polygon-editor-feedback.is-success {
+  color: #087a3a;
+}
+
 @media (max-width: 600px) {
   .polygon-editor {
     left: 12px;
@@ -95,7 +135,8 @@
     padding: 10px;
   }
 
-  .polygon-editor-name input {
+  .polygon-editor-name input,
+  .polygon-editor-name select {
     width: 200px;
     height: 36px;
   }
