@@ -3,7 +3,6 @@ package com.nurigo.nurigo.mission.controller;
 import java.util.List;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,9 +30,14 @@ public class MissionController {
             = "nurigo_anonymous_session";
 
     private final MissionDemoService missionDemoService;
+    private final MissionSessionCookieFactory sessionCookieFactory;
 
-    public MissionController(MissionDemoService missionDemoService) {
+    public MissionController(
+            MissionDemoService missionDemoService,
+            MissionSessionCookieFactory sessionCookieFactory
+    ) {
         this.missionDemoService = missionDemoService;
+        this.sessionCookieFactory = sessionCookieFactory;
     }
 
     @GetMapping("/daily")
@@ -121,12 +125,10 @@ public class MissionController {
         ResponseEntity.BodyBuilder response = ResponseEntity.ok();
 
         if (result.newSession()) {
-            ResponseCookie cookie = ResponseCookie
-                    .from(SESSION_COOKIE_NAME, result.sessionId())
-                    .httpOnly(true)
-                    .sameSite("Lax")
-                    .path("/")
-                    .build();
+            var cookie = sessionCookieFactory.create(
+                    SESSION_COOKIE_NAME,
+                    result.sessionId()
+            );
             response.header(HttpHeaders.SET_COOKIE, cookie.toString());
         }
 
