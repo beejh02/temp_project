@@ -3,6 +3,7 @@ package com.nurigo.nurigo.mission.controller;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.nurigo.nurigo.mission.service.MissionDemoService;
@@ -29,7 +31,10 @@ class MissionHttpContractTest {
     void setUp() {
         service = mock(MissionDemoService.class);
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new MissionController(service))
+                .standaloneSetup(new MissionController(
+                        service,
+                        new MissionSessionCookieFactory(false, "Lax")
+                ))
                 .setControllerAdvice(new MissionExceptionHandler())
                 .build();
     }
@@ -47,6 +52,32 @@ class MissionHttpContractTest {
                         MissionController.SESSION_COOKIE_NAME,
                         "session-1"
                 ));
+    }
+
+    @Test
+    void 발급한_쿠키를_다시_보내면_기존_세션을_조회한다() throws Exception {
+        when(service.getDailyMissions(null)).thenReturn(
+                new MissionSessionResult<>("session-1", true, List.of())
+        );
+        when(service.getDailyMissions("session-1")).thenReturn(
+                new MissionSessionResult<>("session-1", false, List.of())
+        );
+
+        MvcResult firstResponse = mockMvc
+                .perform(get("/api/missions/daily"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        mockMvc.perform(get("/api/missions/daily")
+                        .cookie(firstResponse.getResponse().getCookie(
+                                MissionController.SESSION_COOKIE_NAME
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(cookie().doesNotExist(
+                        MissionController.SESSION_COOKIE_NAME
+                ));
+
+        verify(service).getDailyMissions("session-1");
     }
 
     @Test

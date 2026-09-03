@@ -19,7 +19,10 @@ class MissionControllerTest {
     @Test
     void 새_익명_세션에만_세션_쿠키를_발급한다() {
         MissionDemoService service = mock(MissionDemoService.class);
-        MissionController controller = new MissionController(service);
+        MissionController controller = new MissionController(
+                service,
+                new MissionSessionCookieFactory(false, "Lax")
+        );
         when(service.getDailyMissions(null)).thenReturn(
                 new MissionSessionResult<>("new-session", true, List.of())
         );
@@ -39,6 +42,12 @@ class MissionControllerTest {
         assertTrue(created.getHeaders()
                 .getFirst(HttpHeaders.SET_COOKIE)
                 .contains("nurigo_anonymous_session=new-session"));
+        assertTrue(created.getHeaders()
+                .getFirst(HttpHeaders.SET_COOKIE)
+                .contains("HttpOnly"));
+        assertTrue(created.getHeaders()
+                .getFirst(HttpHeaders.SET_COOKIE)
+                .contains("SameSite=Lax"));
         assertNull(reused.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
     }
 }
