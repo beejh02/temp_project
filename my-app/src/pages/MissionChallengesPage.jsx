@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { apiUrl } from "../utils/api";
+import { apiFetch } from "../utils/api";
 import MissionIcon from "../components/MissionIcon";
 import MissionPageHeader from "../components/MissionPageHeader";
 import { MISSION_STATUS, MISSION_STATUS_LABEL } from "../data/missionConstants";
@@ -9,7 +9,7 @@ import "./MissionSubpage.css";
 const CHALLENGE_POLLING_MS = 7500;
 
 async function requestJson(url, options) {
-  const response = await fetch(apiUrl, {
+  const response = await apiFetch(url, {
     credentials: "same-origin",
     ...options,
   });

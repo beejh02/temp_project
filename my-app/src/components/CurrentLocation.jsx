@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { safelyDetachNaverMapObject } from "../lib/naverMapCleanup";
+import { apiFetch } from "../utils/api";
 import "./CurrentLocation.css";
 
 const INITIAL_MOVE_STEP = 0.00005;
@@ -13,7 +14,7 @@ const MISSION_LOCATION_THROTTLE_MS = 1000;
  */
 async function fetchMarketsAtLocation(latitude, longitude) {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `/api/markets/location?latitude=${latitude}&longitude=${longitude}`,
     );
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import MissionIcon from "../components/MissionIcon";
 import MissionPageHeader from "../components/MissionPageHeader";
 import useMissionDemo from "../hooks/useMissionDemo";
+import { apiFetch } from "../utils/api";
 
 import "./MissionSubpage.css";
 
@@ -60,7 +61,7 @@ function MissionRankingsPage() {
       }
 
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `/api/missions/rankings?period=${periodType}`,
           {
             credentials: "same-origin",

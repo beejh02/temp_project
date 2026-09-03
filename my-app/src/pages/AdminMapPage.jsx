@@ -7,7 +7,7 @@ import MarketPolygon from "../components/MarketPolygon";
 import PolygonEditor from "../components/PolygonEditor";
 import StoreImportPanel from "../components/StoreImportPanel";
 import StoreLayer from "../components/StoreLayer";
-import { apiUrl } from "../utils/api";
+import { apiFetch } from "../utils/api";
 import "../App.css";
 
 function AdminMapPage() {
@@ -37,7 +37,7 @@ function AdminMapPage() {
   useEffect(() => {
     const fetchMarkets = async () => {
       try {
-        const response = await fetch(apiUrl("/api/markets"));
+        const response = await apiFetch("/api/markets");
 
         if (!response.ok) {
           throw new Error(`시장 조회 실패: ${response.status}`);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-import { apiUrl } from "../utils/api";
+import { apiFetch } from "../utils/api";
 import MissionDemoContext from "../contexts/missionDemoContext";
 
 const MISSION_POLLING_MS = 7500;
@@ -72,7 +72,7 @@ function missionDemoReducer(state, action) {
 }
 
 async function requestJson(url, options) {
-  const response = await fetch(apiUrl(url), {
+  const response = await apiFetch(url, {
     credentials: "same-origin",
     ...options,
   });

@@ -4,7 +4,7 @@ import {
   safelyRemoveNaverMapListener,
 } from "../lib/naverMapCleanup";
 import "./PolygonEditor.css";
-import { apiUrl } from "../utils/api";
+import { apiFetch } from "../utils/api";
 
 function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
   const markersRef = useRef([]);
@@ -123,7 +123,7 @@ function PolygonEditor({ map, name, coordinates, onNameChange, onChange }) {
     };
 
     try {
-      const response = await fetch(apiUrl("/api/markets"), {
+      const response = await apiFetch("/api/markets", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
