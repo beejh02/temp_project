@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import AdminMapPage from "./AdminMapPage";
@@ -11,7 +11,21 @@ describe("AdminMapPage", () => {
   beforeEach(() => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => [],
+      json: async () => [
+        {
+          id: 3,
+          name: "대전중앙시장",
+          boundary: {
+            type: "Polygon",
+            coordinates: [[
+              [127.43, 36.32],
+              [127.44, 36.32],
+              [127.44, 36.33],
+              [127.43, 36.32],
+            ]],
+          },
+        },
+      ],
     });
   });
 
@@ -26,5 +40,22 @@ describe("AdminMapPage", () => {
     expect(screen.getByRole("button", { name: "내 위치" }))
       .toBeInTheDocument();
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+  });
+
+  it("저장된 시장을 선택해 이름과 편집 정점을 불러온다", async () => {
+    render(<AdminMapPage />);
+
+    const selector = await screen.findByLabelText("관리할 시장");
+
+    fireEvent.change(selector, { target: { value: "3" } });
+
+    expect(screen.getByLabelText("시장 이름"))
+      .toHaveValue("대전중앙시장");
+    expect(screen.getByText("선택 시장 수정 · 정점 3개"))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "수정" }))
+      .toBeEnabled();
+    expect(screen.getByRole("button", { name: "삭제" }))
+      .toBeEnabled();
   });
 });
