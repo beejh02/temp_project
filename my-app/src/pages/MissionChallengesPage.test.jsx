@@ -44,7 +44,7 @@ describe("MissionChallengesPage", () => {
       .toBeDisabled();
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "/api/missions/challenges",
-      expect.objectContaining({ credentials: "same-origin" }),
+      expect.objectContaining({ credentials: "include" }),
     );
   });
 });

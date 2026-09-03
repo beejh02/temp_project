@@ -50,7 +50,7 @@ describe("MissionRankingsPage", () => {
     await waitFor(() => {
       expect(apiFetchMock).toHaveBeenCalledWith(
         "/api/missions/rankings?period=weekly",
-        expect.objectContaining({ credentials: "same-origin" }),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
   });

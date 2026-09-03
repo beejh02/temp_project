@@ -19,7 +19,10 @@ describe("API utility", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "/api/missions/location",
-      options,
+      {
+        credentials: "include",
+        ...options,
+      },
     );
   });
 });

@@ -37,12 +37,20 @@ describe("MissionDemoProvider", () => {
 
     expect(screen.getByText("미션 0개")).toBeInTheDocument();
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenLastCalledWith(
+      "/api/missions/daily",
+      expect.objectContaining({ credentials: "include" }),
+    );
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(7500);
     });
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(globalThis.fetch).toHaveBeenLastCalledWith(
+      "/api/missions/daily",
+      expect.objectContaining({ credentials: "include" }),
+    );
     view.unmount();
   });
 });
