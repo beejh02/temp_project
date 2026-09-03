@@ -13,8 +13,7 @@ public class CorsConfig implements WebMvcConfigurer {
     private final String allowedOrigins;
 
     public CorsConfig(
-            @Value("${app.cors.allowed-origins:http://localhost:5173,https://nurigo.vercel.app}")
-            String allowedOrigins
+            @Value("${app.cors.allowed-origins:http://localhost:5173,https://nurigo.vercel.app}") String allowedOrigins
     ) {
         this.allowedOrigins = allowedOrigins;
     }
