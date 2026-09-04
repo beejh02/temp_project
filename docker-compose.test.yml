@@ -1,0 +1,21 @@
+services:
+  test-database:
+    image: postgis/postgis:17-3.5
+    container_name: temp-project-test-db
+
+    environment:
+      POSTGRES_DB: temp_project_test
+      POSTGRES_USER: temp_test_user
+      POSTGRES_PASSWORD: temp_test_password
+
+    ports:
+      - "5434:5432"
+
+    tmpfs:
+      - /var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temp_test_user -d temp_project_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
