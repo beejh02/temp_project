@@ -59,6 +59,8 @@ describe("CurrentLocation", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+
     if (originalGeolocation) {
       Object.defineProperty(navigator, "geolocation", originalGeolocation);
     } else {
@@ -92,5 +94,35 @@ describe("CurrentLocation", () => {
       accuracy: 5,
       recordedAt: expect.any(String),
     });
+  });
+
+  it("GPS 위치에서 WASD로 이동한 좌표를 미션 판정에 전달한다", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-04T12:00:00Z"));
+    const map = {
+      panTo: vi.fn(),
+      setZoom: vi.fn(),
+    };
+    const onMissionLocation = vi.fn().mockResolvedValue([]);
+
+    render(
+      <CurrentLocation map={map} onMissionLocation={onMissionLocation} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "내 위치" }));
+    onMissionLocation.mockClear();
+    vi.setSystemTime(new Date("2026-09-04T12:00:02Z"));
+
+    fireEvent.keyDown(window, { key: "w" });
+
+    expect(navigator.geolocation.clearWatch).toHaveBeenCalledWith(1);
+    expect(onMissionLocation).toHaveBeenCalledTimes(1);
+    const submitted = onMissionLocation.mock.calls[0][0];
+
+    expect(submitted.latitude).toBeCloseTo(36.32755);
+    expect(submitted.longitude).toBeCloseTo(127.4274);
+    expect(submitted.accuracy).toBe(5);
+    expect(submitted.recordedAt).toBe("2026-09-04T12:00:02.000Z");
+    expect(screen.getByText(/테스트 위치: 36\.327550, 127\.427400/))
+      .toBeInTheDocument();
   });
 });
