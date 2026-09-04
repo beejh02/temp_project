@@ -78,6 +78,11 @@ TEST_DB_PASSWORD=temp_test_password
 Never point `TEST_DB_URL` at Supabase or another database containing persistent
 application data.
 
+GitHub Actions는 같은 이름과 자격 증명의 임시 PostGIS 서비스를 만들고 전체
+테스트를 실행한다. CI에는 `TEST_DB_*`만 설정하며 운영 `DB_*` 또는 Supabase
+비밀값을 전달하지 않는다. 따라서 연결 실패, Flyway 적용 실패, Hibernate
+스키마 검증 실패는 배포 전에 테스트 실패로 드러난다.
+
 Stop the disposable database when testing is complete:
 
 ```powershell

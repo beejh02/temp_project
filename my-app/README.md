@@ -65,6 +65,9 @@ npm run build
 설정 테스트는 개발 프록시 대상의 형식, Vercel API rewrite의 HTTPS 주소와
 우선순위, 직접 호출 주소와 쿠키 포함 요청을 검증한다.
 
+GitHub에 push하거나 pull request를 만들면 `.github/workflows/ci.yml`이
+동일한 테스트·lint·build를 자동으로 실행한다.
+
 ## 실행 문제 진단
 
 - 로컬 `/api` 요청이 502라면 백엔드가 실행 중인지와 `VITE_API_TARGET`을 확인한다.
