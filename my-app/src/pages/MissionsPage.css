@@ -208,6 +208,25 @@
   font-size: 11px;
 }
 
+.missions-page .mission-list-empty button {
+  min-width: 88px;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border: 1px solid #d6b875;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #7d590f;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.missions-page .mission-list-empty button:focus-visible {
+  outline: 3px solid rgba(243, 173, 24, 0.28);
+  outline-offset: 2px;
+}
+
 .mission-list-refresh-error {
   display: flex;
   align-items: center;
@@ -239,7 +258,7 @@
 
 .mission-list-refresh-error button {
   min-width: 76px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid #c96359;
   border-radius: 8px;
@@ -371,7 +390,8 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 0;
+  min-height: 44px;
+  padding: 6px 2px;
   border: none;
   background: transparent;
   font-size: 13px;

@@ -71,12 +71,12 @@
   }
 
   .search-row input {
-    height: 42px;
+    height: 44px;
     font-size: 13px;
   }
 
   .search-row button {
-    height: 42px;
+    height: 44px;
     padding: 0 14px;
   }
 }

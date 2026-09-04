@@ -36,7 +36,8 @@
 
 .map-load-error button {
   justify-self: center;
-  padding: 9px 16px;
+  min-height: 44px;
+  padding: 0 18px;
   border: 0;
   border-radius: 999px;
   background: #16a34a;

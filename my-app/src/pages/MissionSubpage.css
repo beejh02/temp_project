@@ -30,8 +30,8 @@
 .mission-subpage-header > button {
   display: grid;
   flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border: 1px solid var(--mission-border);
   border-radius: 10px;
@@ -307,7 +307,8 @@
 }
 
 .mission-target button {
-  padding: 7px 10px;
+  min-height: 44px;
+  padding: 0 12px;
   border: 1px solid #dddddd;
   border-radius: 8px;
   background: #ffffff;
@@ -686,7 +687,7 @@
 
 .mission-retry-action {
   min-width: 88px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border: 1px solid #c96359;
   border-radius: 8px;
@@ -713,7 +714,7 @@
 }
 
 .ranking-tabs button {
-  min-height: 40px;
+  min-height: 44px;
   border: 0;
   border-radius: 8px;
   background: transparent;
