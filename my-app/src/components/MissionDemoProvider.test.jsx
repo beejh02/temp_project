@@ -49,6 +49,19 @@ function LocationActions() {
   );
 }
 
+function RewardAction() {
+  const { claimMissionReward } = useMissionDemo();
+
+  return (
+    <button
+      type="button"
+      onClick={() => claimMissionReward("mission-1").catch(() => {})}
+    >
+      보상 요청
+    </button>
+  );
+}
+
 describe("MissionDemoProvider", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -269,5 +282,52 @@ describe("MissionDemoProvider", () => {
     expect(screen.getByTestId("mission-state")).toHaveTextContent(
       "success/1/정상",
     );
+  });
+
+  it("같은 미션의 보상 수령 요청을 처리 중에는 중복 전송하지 않는다", async () => {
+    let resolveClaim;
+    const claimResponse = new Promise((resolve) => {
+      resolveClaim = resolve;
+    });
+
+    globalThis.fetch.mockImplementation((url) => {
+      if (url === "/api/missions/daily") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [],
+        });
+      }
+
+      return claimResponse;
+    });
+
+    render(
+      <MissionDemoProvider>
+        <RewardAction />
+      </MissionDemoProvider>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const claimButton = screen.getByRole("button", { name: "보상 요청" });
+    fireEvent.click(claimButton);
+    fireEvent.click(claimButton);
+
+    const claimCalls = globalThis.fetch.mock.calls.filter(
+      ([url]) => url === "/api/missions/mission-1/claim",
+    );
+    expect(claimCalls).toHaveLength(1);
+
+    await act(async () => {
+      resolveClaim({
+        ok: true,
+        json: async () => ({ id: "mission-1" }),
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
   });
 });

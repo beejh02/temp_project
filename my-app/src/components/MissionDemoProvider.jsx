@@ -88,6 +88,7 @@ async function requestJson(url, options) {
 function MissionDemoProvider({ children }) {
   const [state, dispatch] = useReducer(missionDemoReducer, initialState);
   const locationQueueRef = useRef(Promise.resolve());
+  const missionActionRequestsRef = useRef(new Map());
   const requestVersionRef = useRef(0);
 
   const loadMissions = useCallback(async ({ silent = false } = {}) => {
@@ -164,26 +165,41 @@ function MissionDemoProvider({ children }) {
     };
   }, [loadMissions]);
 
-  const runMissionAction = useCallback(async (missionId, action) => {
+  const runMissionAction = useCallback((missionId, action) => {
+    const requestKey = `${missionId}:${action}`;
+    const pendingRequest = missionActionRequestsRef.current.get(requestKey);
+
+    if (pendingRequest) {
+      return pendingRequest;
+    }
+
     ++requestVersionRef.current;
     dispatch({ type: "operation-start", missionId });
 
-    try {
-      const mission = await requestJson(
-        `/api/missions/${missionId}/${action}`,
-        { method: "POST" },
-      );
-      ++requestVersionRef.current;
-      dispatch({ type: "operation-success", mission });
+    const request = (async () => {
+      try {
+        const mission = await requestJson(
+          `/api/missions/${missionId}/${action}`,
+          { method: "POST" },
+        );
+        ++requestVersionRef.current;
+        dispatch({ type: "operation-success", mission });
 
-      return mission;
-    } catch (error) {
-      dispatch({
-        type: "operation-error",
-        message: error.message || "미션 상태를 변경하지 못했습니다.",
-      });
-      throw error;
-    }
+        return mission;
+      } catch (error) {
+        dispatch({
+          type: "operation-error",
+          message: error.message || "미션 상태를 변경하지 못했습니다.",
+        });
+        throw error;
+      } finally {
+        missionActionRequestsRef.current.delete(requestKey);
+      }
+    })();
+
+    missionActionRequestsRef.current.set(requestKey, request);
+
+    return request;
   }, []);
 
   const recordMissionLocation = useCallback((location) => {
