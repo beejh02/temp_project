@@ -51,7 +51,13 @@ function CurrentLocation({ map, onMissionLocation }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("status");
   const [entryMessage, setEntryMessage] = useState("");
+
+  const showMessage = useCallback((text, type = "status") => {
+    setMessage(text);
+    setMessageType(type);
+  }, []);
 
   const submitMissionLocation = useCallback(
     (latitude, longitude, accuracy = 5) => {
@@ -67,9 +73,12 @@ function CurrentLocation({ map, onMissionLocation }) {
       };
       const submit = (nextLocation) => {
         lastMissionSubmissionAtRef.current = Date.now();
-        onMissionLocation(nextLocation).catch((error) => {
+        Promise.resolve(onMissionLocation(nextLocation)).catch((error) => {
           console.error("미션 위치 판정 중 오류:", error);
-          setMessage(error.message || "현재 위치를 미션에 반영하지 못했습니다.");
+          showMessage(
+            error.message || "현재 위치를 미션에 반영하지 못했습니다.",
+            "error",
+          );
         });
       };
       const elapsed = Date.now() - lastMissionSubmissionAtRef.current;
@@ -96,7 +105,7 @@ function CurrentLocation({ map, onMissionLocation }) {
         }, MISSION_LOCATION_THROTTLE_MS - elapsed);
       }
     },
-    [onMissionLocation],
+    [onMissionLocation, showMessage],
   );
 
   useEffect(() => {
@@ -202,14 +211,14 @@ function CurrentLocation({ map, onMissionLocation }) {
       if (key === "pageup") {
         event.preventDefault();
         moveStepRef.current = Math.min(moveStepRef.current * 2, MAX_MOVE_STEP);
-        setMessage(`이동 속도 증가: ${moveStepRef.current.toFixed(6)}`);
+        showMessage(`이동 속도 증가: ${moveStepRef.current.toFixed(6)}`);
         return;
       }
 
       if (key === "pagedown") {
         event.preventDefault();
         moveStepRef.current = Math.max(moveStepRef.current / 2, MIN_MOVE_STEP);
-        setMessage(`이동 속도 감소: ${moveStepRef.current.toFixed(6)}`);
+        showMessage(`이동 속도 감소: ${moveStepRef.current.toFixed(6)}`);
         return;
       }
 
@@ -266,7 +275,7 @@ function CurrentLocation({ map, onMissionLocation }) {
       checkMarketEntry(lat, lng);
       submitMissionLocation(lat, lng);
 
-      setMessage(
+      showMessage(
         `테스트 위치: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 속도: ${moveStep.toFixed(6)}`,
       );
     };
@@ -276,34 +285,40 @@ function CurrentLocation({ map, onMissionLocation }) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [map, checkMarketEntry, submitMissionLocation]);
+  }, [map, checkMarketEntry, showMessage, submitMissionLocation]);
 
   /* 현재 위치 가져오기 */
   const handleCurrentLocation = () => {
     if (!map) {
-      setMessage("지도가 아직 준비되지 않았습니다.");
+      showMessage("지도가 아직 준비되지 않았습니다.", "error");
       return;
     }
 
     if (!window.naver?.maps) {
-      setMessage("네이버 지도 API를 불러오지 못했습니다.");
+      showMessage("네이버 지도 API를 불러오지 못했습니다.", "error");
       return;
     }
 
     if (!navigator.geolocation) {
-      setMessage("현재 브라우저에서는 위치 정보를 사용할 수 없습니다.");
+      positionRef.current = null;
+      showMessage(
+        "현재 브라우저에서는 위치 정보를 사용할 수 없습니다.",
+        "error",
+      );
       return;
     }
 
     setIsLoading(true);
-    setMessage("현재 위치를 확인하고 있습니다.");
+    showMessage("현재 위치를 확인하고 있습니다.");
     simulationModeRef.current = false;
 
     if (watchIdRef.current != null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
     }
 
-    watchIdRef.current = navigator.geolocation.watchPosition(
+    let watchActive = true;
+    const nextWatchId = navigator.geolocation.watchPosition(
       /* 위치 조회 성공 */
       (position) => {
         if (simulationModeRef.current) {
@@ -347,7 +362,7 @@ function CurrentLocation({ map, onMissionLocation }) {
         /* GPS 위치 기준 시장 진입 여부 확인 */
         checkMarketEntry(latitude, longitude);
         submitMissionLocation(latitude, longitude, accuracy);
-        setMessage(
+        showMessage(
           `GPS 추적 중: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 / PageUp·PageDown 속도 조절`,
         );
 
@@ -356,26 +371,45 @@ function CurrentLocation({ map, onMissionLocation }) {
 
       /* 위치 조회 실패 */
       (error) => {
+        watchActive = false;
+
         if (watchIdRef.current != null) {
           navigator.geolocation.clearWatch(watchIdRef.current);
           watchIdRef.current = null;
         }
 
+        positionRef.current = null;
+        pendingMissionLocationRef.current = null;
+
+        if (missionSubmissionTimerRef.current != null) {
+          window.clearTimeout(missionSubmissionTimerRef.current);
+          missionSubmissionTimerRef.current = null;
+        }
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setMessage("위치 정보 사용 권한이 거부되었습니다.");
+            showMessage(
+              "위치 정보 사용 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용한 후 다시 시도해주세요.",
+              "error",
+            );
             break;
 
           case error.POSITION_UNAVAILABLE:
-            setMessage("현재 위치를 확인할 수 없습니다.");
+            showMessage(
+              "현재 위치를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.",
+              "error",
+            );
             break;
 
           case error.TIMEOUT:
-            setMessage("위치 정보를 가져오는 데 시간이 초과되었습니다.");
+            showMessage(
+              "위치 정보를 가져오는 데 시간이 초과되었습니다. 다시 시도해주세요.",
+              "error",
+            );
             break;
 
           default:
-            setMessage("현재 위치를 가져오지 못했습니다.");
+            showMessage("현재 위치를 가져오지 못했습니다.", "error");
             break;
         }
 
@@ -389,6 +423,12 @@ function CurrentLocation({ map, onMissionLocation }) {
         maximumAge: 0,
       },
     );
+
+    if (watchActive) {
+      watchIdRef.current = nextWatchId;
+    } else {
+      navigator.geolocation.clearWatch(nextWatchId);
+    }
   };
 
   return (
@@ -402,7 +442,16 @@ function CurrentLocation({ map, onMissionLocation }) {
         {isLoading ? "위치 확인 중..." : "내 위치"}
       </button>
 
-      {message && <div className="current-location-message">{message}</div>}
+      {message && (
+        <div
+          className={`current-location-message ${
+            messageType === "error" ? "is-error" : ""
+          }`}
+          role={messageType === "error" ? "alert" : "status"}
+        >
+          {message}
+        </div>
+      )}
       {entryMessage && (
         <div className="market-entry-message">{entryMessage}</div>
       )}

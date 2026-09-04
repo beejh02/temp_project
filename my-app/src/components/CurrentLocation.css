@@ -45,6 +45,12 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.current-location-message.is-error {
+  border: 1px solid #f4b4ae;
+  background: #fff4f2;
+  color: #9f231b;
+}
+
 @media (max-width: 600px) {
   .current-location-container {
     right: 12px;

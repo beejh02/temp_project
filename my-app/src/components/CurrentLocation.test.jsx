@@ -125,4 +125,75 @@ describe("CurrentLocation", () => {
     expect(screen.getByText(/테스트 위치: 36\.327550, 127\.427400/))
       .toBeInTheDocument();
   });
+
+  it("위치 권한이 거부되면 이전 좌표 전송을 멈추고 재시도 방법을 알린다", async () => {
+    vi.useFakeTimers();
+    const map = {
+      panTo: vi.fn(),
+      setZoom: vi.fn(),
+    };
+    const onMissionLocation = vi.fn().mockResolvedValue([]);
+    let watchCount = 0;
+
+    navigator.geolocation.watchPosition.mockImplementation(
+      (onSuccess, onError) => {
+        watchCount += 1;
+
+        if (watchCount === 1) {
+          onSuccess({
+            coords: {
+              latitude: 36.3275,
+              longitude: 127.4274,
+              accuracy: 5,
+            },
+          });
+        } else {
+          onError({
+            code: 1,
+            PERMISSION_DENIED: 1,
+            POSITION_UNAVAILABLE: 2,
+            TIMEOUT: 3,
+          });
+        }
+
+        return watchCount;
+      },
+    );
+
+    render(
+      <CurrentLocation map={map} onMissionLocation={onMissionLocation} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "내 위치" }));
+    onMissionLocation.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "내 위치" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "브라우저 설정에서 위치 권한을 허용한 후 다시 시도해주세요.",
+    );
+    expect(screen.getByRole("button", { name: "내 위치" })).toBeEnabled();
+
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(onMissionLocation).not.toHaveBeenCalled();
+  });
+
+  it("미션 위치 판정 실패를 오류 알림으로 표시한다", async () => {
+    const map = {
+      panTo: vi.fn(),
+      setZoom: vi.fn(),
+    };
+    const onMissionLocation = vi
+      .fn()
+      .mockRejectedValue(new Error("미션 서버에 연결할 수 없습니다."));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(
+      <CurrentLocation map={map} onMissionLocation={onMissionLocation} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "내 위치" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "미션 서버에 연결할 수 없습니다.",
+    );
+  });
 });
