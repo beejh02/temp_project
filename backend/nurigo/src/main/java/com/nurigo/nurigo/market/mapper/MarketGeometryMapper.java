@@ -48,7 +48,17 @@ public class MarketGeometryMapper {
             holes[i - 1] = toLinearRing(rings.get(i));
         }
 
-        return geometryFactory.createPolygon(shell, holes);
+        Polygon polygon = geometryFactory.createPolygon(shell, holes);
+
+        if (polygon.isEmpty()
+                || polygon.getArea() <= 0
+                || !polygon.isValid()) {
+            throw new IllegalArgumentException(
+                    "유효한 시장 Polygon 좌표가 필요합니다."
+            );
+        }
+
+        return polygon;
     }
 
     // JTS Polygon → GeoJSON
@@ -97,8 +107,28 @@ public class MarketGeometryMapper {
                 );
             }
 
-            double longitude = point.get(0);
-            double latitude = point.get(1);
+            Double longitudeValue = point.get(0);
+            Double latitudeValue = point.get(1);
+
+            if (longitudeValue == null || latitudeValue == null) {
+                throw new IllegalArgumentException(
+                        "좌표의 longitude와 latitude는 필수입니다."
+                );
+            }
+
+            double longitude = longitudeValue;
+            double latitude = latitudeValue;
+
+            if (!Double.isFinite(longitude)
+                    || !Double.isFinite(latitude)
+                    || longitude < -180
+                    || longitude > 180
+                    || latitude < -90
+                    || latitude > 90) {
+                throw new IllegalArgumentException(
+                        "유효한 longitude와 latitude 좌표가 필요합니다."
+                );
+            }
 
             coordinates.add(
                     new Coordinate(longitude, latitude)
