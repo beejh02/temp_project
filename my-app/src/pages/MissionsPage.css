@@ -208,6 +208,53 @@
   font-size: 11px;
 }
 
+.mission-refresh-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid #f4b4ae;
+  border-radius: 10px;
+  background: #fff4f2;
+  color: #81231d;
+}
+
+.mission-refresh-error div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mission-refresh-error strong {
+  font-size: 13px;
+}
+
+.mission-refresh-error span {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mission-refresh-error button {
+  min-width: 76px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #c96359;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #81231d;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mission-refresh-error button:focus-visible {
+  outline: 3px solid rgba(201, 99, 89, 0.28);
+  outline-offset: 2px;
+}
+
 .mission-card {
   position: relative;
   padding: 17px 18px;
@@ -367,6 +414,13 @@
   }
   .mission-card h3 {
     font-size: 19px;
+  }
+  .mission-refresh-error {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .mission-refresh-error button {
+    width: 100%;
   }
 }
 
