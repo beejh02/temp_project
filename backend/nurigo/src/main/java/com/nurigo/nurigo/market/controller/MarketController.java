@@ -18,6 +18,7 @@ import com.nurigo.nurigo.market.dto.MarketCreateRequest;
 import com.nurigo.nurigo.market.dto.MarketResponse;
 import com.nurigo.nurigo.market.entity.Market;
 import com.nurigo.nurigo.market.service.MarketService;
+import com.nurigo.nurigo.mission.service.MissionMarketCoordinator;
 
 import jakarta.validation.Valid;
 
@@ -26,9 +27,14 @@ import jakarta.validation.Valid;
 public class MarketController {
 
     private final MarketService marketService;
+    private final MissionMarketCoordinator missionMarketCoordinator;
 
-    public MarketController(MarketService marketService) {
+    public MarketController(
+            MarketService marketService,
+            MissionMarketCoordinator missionMarketCoordinator
+    ) {
         this.marketService = marketService;
+        this.missionMarketCoordinator = missionMarketCoordinator;
     }
 
     @PostMapping
@@ -54,13 +60,26 @@ public class MarketController {
             @PathVariable Long marketId,
             @Valid @RequestBody MarketCreateRequest request
     ) {
-        return ResponseEntity.ok(marketService.update(marketId, request));
+        MarketResponse currentMarket = marketService.findById(marketId);
+        missionMarketCoordinator.validateUpdate(
+                currentMarket,
+                request.name()
+        );
+        MarketResponse updatedMarket = marketService.update(
+                marketId,
+                request
+        );
+        missionMarketCoordinator.marketUpdated(marketId);
+
+        return ResponseEntity.ok(updatedMarket);
     }
 
     @DeleteMapping("/{marketId}")
     public ResponseEntity<Void> deleteMarket(
             @PathVariable Long marketId
     ) {
+        MarketResponse currentMarket = marketService.findById(marketId);
+        missionMarketCoordinator.validateDelete(currentMarket);
         marketService.delete(marketId);
 
         return ResponseEntity.noContent().build();

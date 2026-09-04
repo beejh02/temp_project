@@ -70,6 +70,11 @@ public class MarketService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public MarketResponse findById(Long marketId) {
+        return toResponse(requireMarket(marketId));
+    }
+
     public List<MarketResponse> findMarketsAtLocation(
             double latitude,
             double longitude

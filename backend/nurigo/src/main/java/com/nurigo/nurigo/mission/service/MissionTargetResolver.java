@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -127,8 +126,10 @@ public class MissionTargetResolver {
             String targetName
     ) {
         List<MarketResponse> matches = markets.stream()
-                .filter(market -> normalizeName(market.name()).equals(
-                        normalizeName(targetName)
+                .filter(market -> MissionTargetName.normalize(
+                        market.name()
+                ).equals(
+                        MissionTargetName.normalize(targetName)
                 ))
                 .toList();
 
@@ -156,11 +157,4 @@ public class MissionTargetResolver {
                 && Double.isFinite(store.longitude());
     }
 
-    private String normalizeName(String value) {
-        if (value == null) {
-            return "";
-        }
-
-        return value.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
-    }
 }

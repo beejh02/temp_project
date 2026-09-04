@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.nurigo.nurigo.market.service.DuplicateMarketNameException;
+import com.nurigo.nurigo.market.service.MarketInUseException;
 import com.nurigo.nurigo.market.service.MarketNotFoundException;
 
 @RestControllerAdvice(assignableTypes = MarketController.class)
@@ -23,6 +24,15 @@ public class MarketExceptionHandler {
     @ExceptionHandler(DuplicateMarketNameException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateName(
             DuplicateMarketNameException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(exception.getMessage()));
+    }
+
+    @ExceptionHandler(MarketInUseException.class)
+    public ResponseEntity<ErrorResponse> handleMarketInUse(
+            MarketInUseException exception
     ) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.nurigo.nurigo.mission.entity.MissionDefinition;
+import com.nurigo.nurigo.mission.entity.MissionTargetType;
 import com.nurigo.nurigo.mission.service.MissionTargetResolver;
 
 @Component
@@ -39,5 +40,22 @@ public class MissionRunCatalog {
 
             return definitions;
         }
+    }
+
+    public synchronized boolean isResolvedTargetMarket(Long marketId) {
+        return definitions != null && definitions.stream()
+                .filter(definition -> definition.getTargetType()
+                        == MissionTargetType.MARKET)
+                .anyMatch(definition -> definition.getTargetId()
+                        .equals(marketId));
+    }
+
+    public synchronized boolean invalidateIfTargetMarket(Long marketId) {
+        if (!isResolvedTargetMarket(marketId)) {
+            return false;
+        }
+
+        definitions = null;
+        return true;
     }
 }
