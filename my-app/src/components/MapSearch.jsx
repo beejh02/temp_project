@@ -160,6 +160,7 @@ function MapSearch({ map }) {
       <div className="search-row">
         <input
           type="text"
+          aria-label="주소 또는 좌표 검색"
           value={searchValue}
           onChange={(event) => setSearchValue(event.target.value)}
           onKeyDown={handleKeyDown}
@@ -171,7 +172,11 @@ function MapSearch({ map }) {
         </button>
       </div>
 
-      {message && <div className="search-message">{message}</div>}
+      {message && (
+        <div className="search-message" role="status">
+          {message}
+        </div>
+      )}
     </div>
   );
 }

@@ -196,4 +196,29 @@ describe("CurrentLocation", () => {
       "미션 서버에 연결할 수 없습니다.",
     );
   });
+
+  it("입력 요소를 사용하는 동안 WASD 위치 이동을 실행하지 않는다", () => {
+    const map = {
+      panTo: vi.fn(),
+      setZoom: vi.fn(),
+    };
+    const onMissionLocation = vi.fn().mockResolvedValue([]);
+
+    render(
+      <>
+        <input aria-label="주소 검색" />
+        <CurrentLocation map={map} onMissionLocation={onMissionLocation} />
+      </>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "내 위치" }));
+    onMissionLocation.mockClear();
+    navigator.geolocation.clearWatch.mockClear();
+
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "주소 검색" }), {
+      key: "w",
+    });
+
+    expect(onMissionLocation).not.toHaveBeenCalled();
+    expect(navigator.geolocation.clearWatch).not.toHaveBeenCalled();
+  });
 });
