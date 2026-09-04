@@ -68,6 +68,20 @@ class MarketServiceUnitTest {
     }
 
     @Test
+    void ID로_시장을_조회한다() {
+        Market market = new Market(
+                "조회 시장",
+                new MarketGeometryMapper().toPolygon(boundary())
+        );
+        when(marketRepository.findById(3L)).thenReturn(Optional.of(market));
+
+        MarketResponse response = marketService.findById(3L);
+
+        assertEquals("조회 시장", response.name());
+        verify(marketRepository).findById(3L);
+    }
+
+    @Test
     void 존재하는_시장만_삭제한다() {
         Market market = new Market(
                 "삭제할 시장",

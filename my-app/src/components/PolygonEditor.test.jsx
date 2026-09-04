@@ -90,4 +90,23 @@ describe("PolygonEditor", () => {
     expect(screen.getByRole("status"))
       .toHaveTextContent("대전중앙시장 삭제 완료");
   });
+
+  it("미션 대상 시장 삭제가 거부되면 서버 메시지를 표시한다", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    globalThis.fetch.mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        message: "미션 대상 시장은 삭제할 수 없습니다: 3",
+      }),
+    });
+    const props = renderEditor();
+
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+
+    expect(await screen.findByRole("alert"))
+      .toHaveTextContent("미션 대상 시장은 삭제할 수 없습니다: 3");
+    expect(props.onDeleted).not.toHaveBeenCalled();
+  });
 });
