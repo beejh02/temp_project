@@ -26,6 +26,8 @@ function MissionChallengesPage() {
   const [status, setStatus] = useState("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingChallengeId, setPendingChallengeId] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const hasLoadedRef = useRef(false);
   const requestVersionRef = useRef(0);
 
   useEffect(() => {
@@ -33,7 +35,6 @@ function MissionChallengesPage() {
     let timerId = null;
     let abortController = null;
     let loading = false;
-    let hasLoaded = false;
 
     const scheduleNext = () => {
       if (!disposed) {
@@ -68,13 +69,13 @@ function MissionChallengesPage() {
           setChallenges(data);
           setStatus("success");
           setErrorMessage("");
-          hasLoaded = true;
+          hasLoadedRef.current = true;
         }
       } catch (error) {
         if (!disposed && error.name !== "AbortError") {
           setErrorMessage(error.message || "도전 기록을 불러오지 못했습니다.");
 
-          if (!hasLoaded) {
+          if (!hasLoadedRef.current) {
             setStatus("error");
           }
         }
@@ -91,7 +92,13 @@ function MissionChallengesPage() {
       window.clearTimeout(timerId);
       abortController?.abort();
     };
-  }, []);
+  }, [reloadKey]);
+
+  const handleRetry = () => {
+    setErrorMessage("");
+    setStatus((current) => current === "error" ? "loading" : current);
+    setReloadKey((current) => current + 1);
+  };
 
   const handleClaim = async (challengeId) => {
     ++requestVersionRef.current;
@@ -137,6 +144,20 @@ function MissionChallengesPage() {
           <section className="mission-empty-card" role="alert">
             <MissionIcon type="info" />
             <p>{errorMessage}</p>
+            <button
+              type="button"
+              className="mission-retry-action"
+              onClick={handleRetry}
+            >
+              다시 시도
+            </button>
+          </section>
+        )}
+
+        {status === "success" && challenges.length === 0 && (
+          <section className="mission-empty-card" aria-live="polite">
+            <MissionIcon type="info" />
+            <p>진행 중인 도전 기록이 없어요.</p>
           </section>
         )}
 
@@ -151,9 +172,16 @@ function MissionChallengesPage() {
           ))}
 
         {status === "success" && errorMessage && (
-          <p className="challenge-error" role="alert">
-            {errorMessage}
-          </p>
+          <section className="mission-subpage-refresh-error" role="alert">
+            <span>{errorMessage}</span>
+            <button
+              type="button"
+              className="mission-retry-action"
+              onClick={handleRetry}
+            >
+              다시 시도
+            </button>
+          </section>
         )}
 
         <aside className="challenge-tip">

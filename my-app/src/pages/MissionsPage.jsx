@@ -105,7 +105,7 @@ function MissionsPage() {
         )}
 
         {loadStatus === "success" && errorMessage && (
-          <div className="mission-refresh-error" role="alert">
+          <div className="mission-list-refresh-error" role="alert">
             <div>
               <strong>최신 미션 상태를 불러오지 못했어요.</strong>
               <span>기존 목록을 유지하고 있습니다. {errorMessage}</span>

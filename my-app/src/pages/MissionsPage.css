@@ -208,7 +208,7 @@
   font-size: 11px;
 }
 
-.mission-refresh-error {
+.mission-list-refresh-error {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -221,23 +221,23 @@
   color: #81231d;
 }
 
-.mission-refresh-error div {
+.mission-list-refresh-error div {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 3px;
 }
 
-.mission-refresh-error strong {
+.mission-list-refresh-error strong {
   font-size: 13px;
 }
 
-.mission-refresh-error span {
+.mission-list-refresh-error span {
   font-size: 11px;
   line-height: 1.4;
 }
 
-.mission-refresh-error button {
+.mission-list-refresh-error button {
   min-width: 76px;
   min-height: 40px;
   padding: 0 12px;
@@ -250,7 +250,7 @@
   cursor: pointer;
 }
 
-.mission-refresh-error button:focus-visible {
+.mission-list-refresh-error button:focus-visible {
   outline: 3px solid rgba(201, 99, 89, 0.28);
   outline-offset: 2px;
 }
@@ -415,11 +415,11 @@
   .mission-card h3 {
     font-size: 19px;
   }
-  .mission-refresh-error {
+  .mission-list-refresh-error {
     align-items: stretch;
     flex-direction: column;
   }
-  .mission-refresh-error button {
+  .mission-list-refresh-error button {
     width: 100%;
   }
 }

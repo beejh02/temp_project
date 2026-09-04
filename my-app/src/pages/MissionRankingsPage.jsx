@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import MissionIcon from "../components/MissionIcon";
 import MissionPageHeader from "../components/MissionPageHeader";
@@ -19,7 +19,9 @@ function MissionRankingsPage() {
   const [ranking, setRanking] = useState(null);
   const [rankingStatus, setRankingStatus] = useState("loading");
   const [rankingError, setRankingError] = useState("");
-  const { loadStatus, errorMessage } = useMissionDemo();
+  const [reloadKey, setReloadKey] = useState(0);
+  const loadedPeriodRef = useRef(null);
+  const { loadStatus, errorMessage, refreshMissions } = useMissionDemo();
   const displayStatus = loadStatus === "error" ? "error" : rankingStatus;
   const displayError = loadStatus === "error"
     ? errorMessage || "미션 서버에 연결할 수 없습니다."
@@ -34,7 +36,6 @@ function MissionRankingsPage() {
     let timerId = null;
     let abortController = null;
     let loading = false;
-    let hasLoaded = false;
 
     const scheduleNext = () => {
       if (!disposed) {
@@ -75,17 +76,25 @@ function MissionRankingsPage() {
           );
         }
 
+        if (
+          !data
+          || !data.currentUser
+          || !Array.isArray(data.leaders)
+        ) {
+          throw new Error("랭킹 응답 형식이 올바르지 않습니다.");
+        }
+
         if (!disposed) {
           setRanking(data);
           setRankingStatus("success");
           setRankingError("");
-          hasLoaded = true;
+          loadedPeriodRef.current = periodType;
         }
       } catch (error) {
         if (!disposed && error.name !== "AbortError") {
           setRankingError(error.message || "랭킹을 불러오지 못했습니다.");
 
-          if (!hasLoaded) {
+          if (loadedPeriodRef.current !== periodType) {
             setRankingStatus("error");
           }
         }
@@ -111,7 +120,18 @@ function MissionRankingsPage() {
       abortController?.abort();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [loadStatus, periodType]);
+  }, [loadStatus, periodType, reloadKey]);
+
+  const handleRetry = () => {
+    if (loadStatus === "error") {
+      refreshMissions();
+      return;
+    }
+
+    setRankingError("");
+    setRankingStatus(ranking ? "success" : "loading");
+    setReloadKey((current) => current + 1);
+  };
 
   return (
     <main className="mission-subpage">
@@ -152,6 +172,13 @@ function MissionRankingsPage() {
           <section className="mission-empty-card" role="alert">
             <MissionIcon type="info" />
             <p>{displayError}</p>
+            <button
+              type="button"
+              className="mission-retry-action"
+              onClick={handleRetry}
+            >
+              다시 시도
+            </button>
           </section>
         )}
 
@@ -160,9 +187,16 @@ function MissionRankingsPage() {
         )}
 
         {displayStatus === "success" && rankingError && (
-          <p className="mission-refresh-error" role="alert">
-            {rankingError}
-          </p>
+          <section className="mission-subpage-refresh-error" role="alert">
+            <span>{rankingError}</span>
+            <button
+              type="button"
+              className="mission-retry-action"
+              onClick={handleRetry}
+            >
+              다시 시도
+            </button>
+          </section>
         )}
 
         <aside className="ranking-note">
@@ -197,25 +231,31 @@ function RankingContent({ ranking }) {
           <time>{ranking.period}</time>
         </div>
 
-        <ol>
-          {ranking.leaders.map((entry) => (
-            <li
-              key={`${entry.rank}-${entry.nickname}`}
-              className={entry.rank <= 3 ? `is-top-${entry.rank}` : ""}
-            >
-              <span className="ranking-position">
-                {entry.rank <= 3 ? <MissionIcon type="trophy" /> : entry.rank}
-              </span>
-              <div className="ranking-avatar">
-                {entry.nickname.slice(0, 1)}
-              </div>
-              <strong>{entry.nickname}</strong>
-              <span className="ranking-points">
-                {entry.points.toLocaleString()} NP
-              </span>
-            </li>
-          ))}
-        </ol>
+        {ranking.leaders.length === 0 ? (
+          <p className="ranking-empty">집계된 참여자가 아직 없어요.</p>
+        ) : (
+          <ol>
+            {ranking.leaders.map((entry) => (
+              <li
+                key={`${entry.rank}-${entry.nickname}`}
+                className={entry.rank <= 3 ? `is-top-${entry.rank}` : ""}
+              >
+                <span className="ranking-position">
+                  {entry.rank <= 3
+                    ? <MissionIcon type="trophy" />
+                    : entry.rank}
+                </span>
+                <div className="ranking-avatar">
+                  {entry.nickname.slice(0, 1)}
+                </div>
+                <strong>{entry.nickname}</strong>
+                <span className="ranking-points">
+                  {entry.points.toLocaleString()} NP
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
       </section>
     </>
   );
