@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 import MissionIcon from "../components/MissionIcon";
 import MissionPageHeader from "../components/MissionPageHeader";
@@ -139,7 +140,7 @@ function MissionRankingsPage() {
         <MissionPageHeader
           eyebrow="NURIGO RANKING"
           title="참여 포인트 순위"
-          description="현재 서버 실행 중 획득한 포인트를 기준으로 집계해요."
+          description="미션으로 모은 NP와 내 참여 순위를 확인해요."
         />
 
         <div
@@ -183,7 +184,7 @@ function MissionRankingsPage() {
         )}
 
         {displayStatus === "success" && ranking && (
-          <RankingContent ranking={ranking} />
+          <RankingContent ranking={ranking} periodLabel={RANKING_PERIODS[periodType]} />
         )}
 
         {displayStatus === "success" && rankingError && (
@@ -200,27 +201,38 @@ function MissionRankingsPage() {
         )}
 
         <aside className="ranking-note">
-          랭킹과 미션 진행 상태는 백엔드 서버를 다시 시작하면 새로
-          구성됩니다.
+          미션 보상을 받으면 획득 포인트가 순위에 반영돼요.
+          다음 점포를 방문하며 시장 탐험을 이어가 보세요.
         </aside>
       </div>
     </main>
   );
 }
 
-function RankingContent({ ranking }) {
+function RankingContent({ ranking, periodLabel }) {
   return (
     <>
-      <section className="my-ranking-card">
-        <div>
-          <span>MY RANK</span>
-          <strong>{ranking.currentUser.rank}위</strong>
-        </div>
-        <div>
-          <strong>{ranking.currentUser.nickname}</strong>
-          <span>{ranking.currentUser.points.toLocaleString()} NP</span>
-        </div>
+      <section className="my-ranking-card" aria-labelledby="my-ranking-title">
+        <header>
+          <h2 id="my-ranking-title">내 참여 순위</h2>
+          <span>{ranking.currentUser.nickname}</span>
+        </header>
+        <dl>
+          <div>
+            <dt>{periodLabel} 획득 포인트</dt>
+            <dd>{ranking.currentUser.points.toLocaleString()} NP</dd>
+          </div>
+          <div>
+            <dt>{periodLabel} 순위</dt>
+            <dd>{ranking.currentUser.rank}위</dd>
+          </div>
+        </dl>
       </section>
+
+      <nav className="mission-detail-actions" aria-label="미션 계속하기">
+        <Link className="mission-primary-action" to="/">지도에서 미션 이어가기</Link>
+        <Link className="mission-secondary-action" to="/missions">오늘의 미션 보기</Link>
+      </nav>
 
       <section className="ranking-board">
         <div className="ranking-board__heading">

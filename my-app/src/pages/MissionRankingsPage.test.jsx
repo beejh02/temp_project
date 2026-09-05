@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -90,5 +90,27 @@ describe("MissionRankingsPage", () => {
     expect(await screen.findByText("집계된 참여자가 아직 없어요."))
       .toBeInTheDocument();
     expect(apiFetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("내 순위와 기간별 획득 포인트를 표시하고 지도·미션으로 연결한다", async () => {
+    render(<MemoryRouter><MissionRankingsPage /></MemoryRouter>);
+    const summary = within(await screen.findByRole("region", { name: "내 참여 순위" }));
+    expect(summary.getByText("주간 획득 포인트")).toBeInTheDocument();
+    expect(summary.getByText("120 NP")).toBeInTheDocument();
+    expect(summary.getByText("3위")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "지도에서 미션 이어가기" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "오늘의 미션 보기" })).toHaveAttribute("href", "/missions");
+
+    apiFetchMock.mockResolvedValue({ ok: true, json: async () => ({
+      label: "월간 랭킹", period: "2026.9",
+      currentUser: { rank: 2, nickname: "시장탐험가", points: 405 }, leaders: [],
+    }) });
+    fireEvent.click(screen.getByRole("tab", { name: "월간 순위" }));
+    const monthly = within(await screen.findByRole("region", { name: "내 참여 순위" }));
+    expect(monthly.getByText("월간 획득 포인트")).toBeInTheDocument();
+    expect(monthly.getByText("405 NP")).toBeInTheDocument();
+    expect(monthly.getByText("2위")).toBeInTheDocument();
+    expect(apiFetchMock).toHaveBeenLastCalledWith("/api/missions/rankings?period=monthly",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }));
   });
 });
