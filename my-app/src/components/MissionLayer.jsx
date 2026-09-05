@@ -399,6 +399,8 @@ function MissionLayer({
     selectedLocationKey === null
       ? focusedLocation?.key ?? null
       : selectedLocationKey || null;
+  const focusedLatitude = focusedLocation?.latitude;
+  const focusedLongitude = focusedLocation?.longitude;
 
   const handleToggle = useCallback(
     (locationKey) => {
@@ -418,13 +420,13 @@ function MissionLayer({
       return;
     }
 
-    if (!focusedLocation) {
+    if (focusedLatitude == null || focusedLongitude == null) {
       return;
     }
 
     const position = new window.naver.maps.LatLng(
-      focusedLocation.latitude,
-      focusedLocation.longitude,
+      focusedLatitude,
+      focusedLongitude,
     );
 
     map.panTo(position);
@@ -432,7 +434,7 @@ function MissionLayer({
     if (map.getZoom() < 17) {
       map.setZoom(17, true);
     }
-  }, [map, focusedLocation, focusedMissionId]);
+  }, [map, focusedLatitude, focusedLongitude, focusedMissionId]);
 
   useEffect(() => {
     if (!map || !window.naver?.maps) {
