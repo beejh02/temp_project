@@ -113,7 +113,13 @@ function UserMapPage() {
       />
 
       <MapSearch map={map} />
-      <CurrentLocation map={map} onMissionLocation={recordMissionLocation} />
+      <CurrentLocation
+        map={map}
+        onMissionLocation={recordMissionLocation}
+        demoMissions={missions}
+        markets={markets}
+        focusedMissionId={focusedMissionId}
+      />
     </div>
   );
 }

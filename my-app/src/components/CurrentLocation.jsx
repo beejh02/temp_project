@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { safelyDetachNaverMapObject } from "../lib/naverMapCleanup";
 import { apiFetch } from "../utils/api";
+import { getMissionDemoStart } from "../utils/missionDemoLocation";
+import { MISSION_STATUS_LABEL, isMissionFinished } from "../data/missionConstants";
 import "./CurrentLocation.css";
 
 const INITIAL_MOVE_STEP = 0.00005;
@@ -30,7 +32,13 @@ async function fetchMarketsAtLocation(latitude, longitude) {
   }
 }
 
-function CurrentLocation({ map, onMissionLocation }) {
+function CurrentLocation({
+  map,
+  onMissionLocation,
+  demoMissions,
+  markets = [],
+  focusedMissionId,
+}) {
   const markerRef = useRef(null);
   const positionRef = useRef(null);
   const moveStepRef = useRef(INITIAL_MOVE_STEP);
@@ -39,6 +47,16 @@ function CurrentLocation({ map, onMissionLocation }) {
   const lastMissionSubmissionAtRef = useRef(0);
   const pendingMissionLocationRef = useRef(null);
   const missionSubmissionTimerRef = useRef(null);
+  const demoPanelRef = useRef(null);
+  const [selectedDemoMissionId, setSelectedDemoMissionId] = useState("");
+  const [demoTargetName, setDemoTargetName] = useState("");
+  const selectedDemoMission = demoMissions?.find(
+    ({ id }) => String(id) === (selectedDemoMissionId || focusedMissionId),
+  ) || demoMissions?.find(
+    ({ target, status }) => target.type === "store"
+      && !isMissionFinished(status) && status !== "closed",
+  ) || demoMissions?.[0];
+  const demoStart = getMissionDemoStart(selectedDemoMission, markets);
 
   /*
    * 현재 들어가 있는 시장 ID
@@ -58,6 +76,29 @@ function CurrentLocation({ map, onMissionLocation }) {
     setMessage(text);
     setMessageType(type);
   }, []);
+
+  const clearPendingLocation = () => {
+    positionRef.current = null;
+    pendingMissionLocationRef.current = null;
+    window.clearTimeout(missionSubmissionTimerRef.current);
+    missionSubmissionTimerRef.current = null;
+    lastMissionSubmissionAtRef.current = 0;
+  };
+
+  const showPosition = (latitude, longitude, accuracy) => {
+    positionRef.current = { lat: latitude, lng: longitude, accuracy };
+    const position = new window.naver.maps.LatLng(latitude, longitude);
+
+    if (markerRef.current) {
+      markerRef.current.setPosition(position);
+      markerRef.current.setMap(map);
+    } else {
+      markerRef.current = new window.naver.maps.Marker({ position, map });
+    }
+
+    map.panTo(position);
+    map.setZoom(18);
+  };
 
   const submitMissionLocation = useCallback(
     (latitude, longitude, accuracy = 5) => {
@@ -287,6 +328,32 @@ function CurrentLocation({ map, onMissionLocation }) {
     };
   }, [map, checkMarketEntry, showMessage, submitMissionLocation]);
 
+  const handleDemoStart = () => {
+    if (!map || !window.naver?.maps || !demoStart) {
+      return;
+    }
+
+    simulationModeRef.current = true;
+    if (watchIdRef.current != null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    clearPendingLocation();
+    currentMarketIdRef.current = null;
+    setEntryMessage("");
+    setIsLoading(false);
+    moveStepRef.current = INITIAL_MOVE_STEP;
+    setSelectedDemoMissionId(String(selectedDemoMission.id));
+    setDemoTargetName(selectedDemoMission.target.name);
+
+    const { latitude, longitude } = demoStart;
+    showPosition(latitude, longitude, 5);
+    checkMarketEntry(latitude, longitude);
+    submitMissionLocation(latitude, longitude);
+    showMessage("대상 남쪽에서 시작했어요. W 키로 접근하세요. WASD 이동 · PageUp/Down 속도 조절");
+    demoPanelRef.current.open = false;
+  };
+
   /* 현재 위치 가져오기 */
   const handleCurrentLocation = () => {
     if (!map) {
@@ -299,8 +366,9 @@ function CurrentLocation({ map, onMissionLocation }) {
       return;
     }
 
+    clearPendingLocation();
+    setDemoTargetName("");
     if (!navigator.geolocation) {
-      positionRef.current = null;
       showMessage(
         "현재 브라우저에서는 위치 정보를 사용할 수 없습니다.",
         "error",
@@ -327,37 +395,7 @@ function CurrentLocation({ map, onMissionLocation }) {
 
         const { latitude, longitude, accuracy } = position.coords;
 
-        /*
-         * WASD 이동의 시작 위치 저장
-         */
-        positionRef.current = {
-          lat: latitude,
-          lng: longitude,
-          accuracy,
-        };
-
-        const currentPosition = new window.naver.maps.LatLng(
-          latitude,
-          longitude,
-        );
-
-        /*
-         * 기존 Marker가 있으면
-         * 새로 생성하지 않고 위치만 변경
-         */
-        if (markerRef.current) {
-          markerRef.current.setPosition(currentPosition);
-          markerRef.current.setMap(map);
-        } else {
-          markerRef.current = new window.naver.maps.Marker({
-            position: currentPosition,
-            map,
-          });
-        }
-
-        /* 현재 위치로 지도 이동 */
-        map.panTo(currentPosition);
-        map.setZoom(18);
+        showPosition(latitude, longitude, accuracy);
 
         /* GPS 위치 기준 시장 진입 여부 확인 */
         checkMarketEntry(latitude, longitude);
@@ -371,6 +409,9 @@ function CurrentLocation({ map, onMissionLocation }) {
 
       /* 위치 조회 실패 */
       (error) => {
+        if (simulationModeRef.current) {
+          return;
+        }
         watchActive = false;
 
         if (watchIdRef.current != null) {
@@ -441,6 +482,41 @@ function CurrentLocation({ map, onMissionLocation }) {
       >
         {isLoading ? "위치 확인 중..." : "내 위치"}
       </button>
+
+      {demoMissions && (
+        <details className="location-demo" ref={demoPanelRef}>
+          <summary>위치 시연</summary>
+          <div className="location-demo-controls">
+            <label>
+              시연할 미션
+              <select
+                value={selectedDemoMission?.id ?? ""}
+                onChange={(event) => setSelectedDemoMissionId(event.target.value)}
+              >
+                {demoMissions.length === 0 && <option value="">미션 준비 중</option>}
+                {demoMissions.map((mission) => (
+                  <option key={mission.id} value={mission.id}>
+                    {mission.title} · {MISSION_STATUS_LABEL[mission.status]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p>대상 남쪽에서 시작해 WASD로 이동하세요. 실제 GPS 없이 방문을 시연할 수 있어요.</p>
+            <button
+              type="button"
+              className="current-location-button"
+              disabled={!map || !demoStart}
+              onClick={handleDemoStart}
+            >
+              시연 시작
+            </button>
+            <small>시작 위치만 이동하며, 미션 기록은 유지돼요.</small>
+          </div>
+        </details>
+      )}
+      {demoTargetName && (
+        <div className="location-demo-badge">시연 위치 · {demoTargetName}</div>
+      )}
 
       {message && (
         <div

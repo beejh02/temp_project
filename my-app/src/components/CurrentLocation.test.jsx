@@ -71,6 +71,102 @@ describe("CurrentLocation", () => {
     vi.restoreAllMocks();
   });
 
+  const demoMission = {
+    id: 27,
+    title: "지정 점포 방문하기",
+    status: "available",
+    target: {
+      type: "store",
+      name: "시연 점포",
+      location: { latitude: 36.3275, longitude: 127.4274 },
+    },
+  };
+
+  it("GPS 없이 API 미션 대상 부근에서 시작하고 WASD 이동을 판정에 전달한다", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-05T12:00:00Z"));
+    Object.defineProperty(navigator, "geolocation", { value: undefined });
+    const map = { panTo: vi.fn(), setZoom: vi.fn() };
+    const onMissionLocation = vi.fn().mockResolvedValue([]);
+
+    render(
+      <CurrentLocation map={map} onMissionLocation={onMissionLocation}
+        demoMissions={[demoMission]} />,
+    );
+    fireEvent.click(screen.getByText("위치 시연"));
+    fireEvent.click(screen.getByRole("button", { name: "시연 시작" }));
+
+    expect(onMissionLocation).toHaveBeenCalledWith({
+      latitude: expect.closeTo(36.3269),
+      longitude: 127.4274,
+      accuracy: 5,
+      recordedAt: "2026-09-05T12:00:00.000Z",
+    });
+    expect(map.panTo).toHaveBeenCalled();
+    expect(screen.getByText(/시연 위치 · 시연 점포/)).toBeInTheDocument();
+
+    vi.setSystemTime(new Date("2026-09-05T12:00:02Z"));
+    fireEvent.keyDown(window, { key: "w" });
+
+    expect(onMissionLocation).toHaveBeenLastCalledWith({
+      latitude: expect.closeTo(36.32695),
+      longitude: 127.4274,
+      accuracy: 5,
+      recordedAt: "2026-09-05T12:00:02.000Z",
+    });
+  });
+
+  it("시장 미션은 API Polygon 바깥 남쪽에서 시작한다", () => {
+    const onMissionLocation = vi.fn().mockResolvedValue([]);
+    render(
+      <CurrentLocation map={{ panTo: vi.fn(), setZoom: vi.fn() }}
+        onMissionLocation={onMissionLocation}
+        demoMissions={[{
+          ...demoMission,
+          target: { ...demoMission.target, type: "market", marketId: 8 },
+        }]}
+        markets={[{
+          id: 8,
+          boundary: { coordinates: [[
+            [127.427, 36.325], [127.428, 36.325],
+            [127.428, 36.33], [127.427, 36.33], [127.427, 36.325],
+          ]] },
+        }]} />,
+    );
+    fireEvent.click(screen.getByText("위치 시연"));
+    fireEvent.click(screen.getByRole("button", { name: "시연 시작" }));
+    expect(onMissionLocation).toHaveBeenCalledWith(expect.objectContaining({
+      latitude: expect.closeTo(36.3249),
+      longitude: 127.4274,
+    }));
+  });
+
+  it("시연 시작 후 늦게 도착한 GPS 성공·실패 응답이 시연 위치를 덮어쓰지 않는다", async () => {
+    let onGpsSuccess;
+    let onGpsError;
+    navigator.geolocation.watchPosition.mockImplementation((success, error) => {
+      onGpsSuccess = success;
+      onGpsError = error;
+      return 15;
+    });
+    const onMissionLocation = vi.fn().mockResolvedValue([]);
+    render(
+      <CurrentLocation map={{ panTo: vi.fn(), setZoom: vi.fn() }}
+        onMissionLocation={onMissionLocation} demoMissions={[demoMission]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "내 위치" }));
+    fireEvent.click(screen.getByText("위치 시연"));
+    fireEvent.click(screen.getByRole("button", { name: "시연 시작" }));
+    onGpsSuccess({ coords: { latitude: 37, longitude: 128, accuracy: 5 } });
+    onGpsError({ code: 1, PERMISSION_DENIED: 1 });
+
+    expect(navigator.geolocation.clearWatch).toHaveBeenCalledWith(15);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "내 위치" })).toBeEnabled();
+    await waitFor(() => expect(onMissionLocation).toHaveBeenCalledTimes(1));
+    expect(onMissionLocation.mock.calls[0][0].latitude).toBeCloseTo(36.3269);
+  });
+
   it("공통 API 클라이언트로 현재 위치의 시장을 조회한다", async () => {
     const map = {
       panTo: vi.fn(),
