@@ -134,7 +134,7 @@ function MissionDetailPage() {
             <div>
               <small>REWARD RECEIVED</small>
               <h2>{mission.reward.toLocaleString()} NP를 받았어요!</h2>
-              <p>미션 보상이 정상적으로 지급됐어요.</p>
+              <p>방문으로 모은 포인트와 내 참여 순위를 확인해 보세요.</p>
             </div>
           </section>
         )}
@@ -144,6 +144,37 @@ function MissionDetailPage() {
             <MissionIcon type="info" />
             <p>{errorMessage}</p>
           </section>
+        )}
+
+        <div className="mission-detail-actions">
+          <button
+            type="button"
+            className="mission-secondary-action"
+            onClick={handleMapClick}
+          >
+            지도에서 위치 보기
+          </button>
+          {isClaimed ? (
+            <Link className="mission-primary-action" to="/missions/rankings">
+              내 포인트·순위 보기
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="mission-primary-action"
+              onClick={handlePrimaryAction}
+              disabled={!isCompleted || pendingMissionId === String(mission.id)}
+            >
+              {pendingMissionId === String(mission.id)
+                ? "처리 중..."
+                : getActionLabel(mission.status)}
+            </button>
+          )}
+        </div>
+        {!isClaimed && !isClosed && (
+          <p className="mission-demo-caption">
+            현재 위치 또는 WASD 이동이 목표 조건을 충족하면 자동으로 반영됩니다.
+          </p>
         )}
 
         <section className="mission-detail-card">
@@ -204,33 +235,6 @@ function MissionDetailPage() {
           </div>
         </aside>
 
-        <div className="mission-detail-actions">
-          <button
-            type="button"
-            className="mission-secondary-action"
-            onClick={handleMapClick}
-          >
-            지도에서 위치 보기
-          </button>
-          <button
-            type="button"
-            className="mission-primary-action"
-            onClick={handlePrimaryAction}
-            disabled={
-              !isCompleted
-              || pendingMissionId === String(mission.id)
-            }
-          >
-            {pendingMissionId === String(mission.id)
-              ? "처리 중..."
-              : getActionLabel(mission.status)}
-          </button>
-        </div>
-        {!isClaimed && !isClosed && (
-          <p className="mission-demo-caption">
-            현재 위치 또는 WASD 이동이 목표 조건을 충족하면 자동으로 반영됩니다.
-          </p>
-        )}
       </div>
     </main>
   );
@@ -239,10 +243,6 @@ function MissionDetailPage() {
 function getActionLabel(status) {
   if (status === MISSION_STATUS.COMPLETED) {
     return "보상 받기";
-  }
-
-  if (status === MISSION_STATUS.CLAIMED) {
-    return "보상 수령 완료";
   }
 
   if (status === MISSION_STATUS.CLOSED) {

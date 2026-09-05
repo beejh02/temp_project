@@ -176,6 +176,7 @@
 
 .reward-result > span {
   display: grid;
+  flex: 0 0 auto;
   width: 40px;
   height: 40px;
   place-items: center;
@@ -374,7 +375,11 @@
   margin-top: 14px;
 }
 
-.mission-detail-actions button {
+.mission-detail-actions button,
+.mission-detail-actions a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 46px;
   padding: 0 14px;
   border-radius: 10px;
@@ -697,6 +702,8 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  text-align: center;
+  text-decoration: none;
 }
 
 .mission-retry-action:focus-visible {
@@ -896,7 +903,8 @@
   line-height: 1.5;
 }
 
-.mission-subpage button:focus-visible {
+.mission-subpage button:focus-visible,
+.mission-subpage a:focus-visible {
   outline: 3px solid rgba(243, 173, 24, 0.3);
   outline-offset: 2px;
 }
