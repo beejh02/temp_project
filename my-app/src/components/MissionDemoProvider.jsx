@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { apiFetch } from "../utils/api";
 import MissionDemoContext from "../contexts/missionDemoContext";
 
@@ -87,6 +87,7 @@ async function requestJson(url, options) {
 
 function MissionDemoProvider({ children }) {
   const [state, dispatch] = useReducer(missionDemoReducer, initialState);
+  const [demoLocation, saveDemoLocation] = useState(null);
   const locationQueueRef = useRef(Promise.resolve());
   const missionActionRequestsRef = useRef(new Map());
   const requestVersionRef = useRef(0);
@@ -239,9 +240,11 @@ function MissionDemoProvider({ children }) {
       pendingMissionId: state.pendingMissionId,
       refreshMissions: loadMissions,
       recordMissionLocation,
+      demoLocation,
+      saveDemoLocation,
       claimMissionReward: (missionId) => runMissionAction(missionId, "claim"),
     }),
-    [state, loadMissions, recordMissionLocation, runMissionAction],
+    [state, loadMissions, recordMissionLocation, runMissionAction, demoLocation],
   );
 
   return (

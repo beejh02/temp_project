@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import MissionDemoContext from "../contexts/missionDemoContext";
 import { safelyDetachNaverMapObject } from "../lib/naverMapCleanup";
 import { apiFetch } from "../utils/api";
 import { getMissionDemoStart } from "../utils/missionDemoLocation";
@@ -39,17 +40,20 @@ function CurrentLocation({
   markets = [],
   focusedMissionId,
 }) {
+  const missionDemo = useContext(MissionDemoContext);
+  const saveDemoLocation = missionDemo?.saveDemoLocation;
+  const [restoredDemo] = useState(() => missionDemo?.demoLocation ?? null);
   const markerRef = useRef(null);
-  const positionRef = useRef(null);
-  const moveStepRef = useRef(INITIAL_MOVE_STEP);
+  const positionRef = useRef(restoredDemo?.position ?? null);
+  const moveStepRef = useRef(restoredDemo?.moveStep ?? INITIAL_MOVE_STEP);
   const watchIdRef = useRef(null);
-  const simulationModeRef = useRef(false);
+  const simulationModeRef = useRef(Boolean(restoredDemo));
   const lastMissionSubmissionAtRef = useRef(0);
   const pendingMissionLocationRef = useRef(null);
   const missionSubmissionTimerRef = useRef(null);
   const demoPanelRef = useRef(null);
-  const [selectedDemoMissionId, setSelectedDemoMissionId] = useState("");
-  const [demoTargetName, setDemoTargetName] = useState("");
+  const [selectedDemoMissionId, setSelectedDemoMissionId] = useState(restoredDemo?.missionId ?? "");
+  const [demoTargetName, setDemoTargetName] = useState(restoredDemo?.targetName ?? "");
   const selectedDemoMission = demoMissions?.find(
     ({ id }) => String(id) === (selectedDemoMissionId || focusedMissionId),
   ) || demoMissions?.find(
@@ -68,7 +72,9 @@ function CurrentLocation({
   const entryMessageTimerRef = useRef(null);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(restoredDemo
+    ? "이전 시연 위치에서 이어갑니다. WASD 이동 · PageUp/Down 속도 조절"
+    : "");
   const [messageType, setMessageType] = useState("status");
   const [entryMessage, setEntryMessage] = useState("");
 
@@ -76,6 +82,20 @@ function CurrentLocation({
     setMessage(text);
     setMessageType(type);
   }, []);
+
+  const rememberDemoLocation = useCallback((
+    missionId = selectedDemoMissionId,
+    targetName = demoTargetName,
+  ) => {
+    if (simulationModeRef.current && positionRef.current) {
+      saveDemoLocation?.({
+        position: { ...positionRef.current },
+        moveStep: moveStepRef.current,
+        missionId,
+        targetName,
+      });
+    }
+  }, [saveDemoLocation, selectedDemoMissionId, demoTargetName]);
 
   const clearPendingLocation = () => {
     positionRef.current = null;
@@ -85,7 +105,7 @@ function CurrentLocation({
     lastMissionSubmissionAtRef.current = 0;
   };
 
-  const showPosition = (latitude, longitude, accuracy) => {
+  const showPosition = useCallback((latitude, longitude, accuracy) => {
     positionRef.current = { lat: latitude, lng: longitude, accuracy };
     const position = new window.naver.maps.LatLng(latitude, longitude);
 
@@ -98,7 +118,16 @@ function CurrentLocation({
 
     map.panTo(position);
     map.setZoom(18);
-  };
+  }, [map]);
+
+  useEffect(() => {
+    if (!map || !window.naver?.maps || markerRef.current || !positionRef.current) {
+      return;
+    }
+
+    const { lat, lng, accuracy } = positionRef.current;
+    showPosition(lat, lng, accuracy);
+  }, [map, showPosition]);
 
   const submitMissionLocation = useCallback(
     (latitude, longitude, accuracy = 5) => {
@@ -252,6 +281,7 @@ function CurrentLocation({
       if (key === "pageup") {
         event.preventDefault();
         moveStepRef.current = Math.min(moveStepRef.current * 2, MAX_MOVE_STEP);
+        rememberDemoLocation();
         showMessage(`이동 속도 증가: ${moveStepRef.current.toFixed(6)}`);
         return;
       }
@@ -259,6 +289,7 @@ function CurrentLocation({
       if (key === "pagedown") {
         event.preventDefault();
         moveStepRef.current = Math.max(moveStepRef.current / 2, MIN_MOVE_STEP);
+        rememberDemoLocation();
         showMessage(`이동 속도 감소: ${moveStepRef.current.toFixed(6)}`);
         return;
       }
@@ -304,6 +335,7 @@ function CurrentLocation({
         lng,
         accuracy: 5,
       };
+      rememberDemoLocation();
 
       const newPosition = new window.naver.maps.LatLng(lat, lng);
 
@@ -326,7 +358,7 @@ function CurrentLocation({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [map, checkMarketEntry, showMessage, submitMissionLocation]);
+  }, [map, checkMarketEntry, showMessage, submitMissionLocation, rememberDemoLocation]);
 
   const handleDemoStart = () => {
     if (!map || !window.naver?.maps || !demoStart) {
@@ -348,6 +380,7 @@ function CurrentLocation({
 
     const { latitude, longitude } = demoStart;
     showPosition(latitude, longitude, 5);
+    rememberDemoLocation(String(selectedDemoMission.id), selectedDemoMission.target.name);
     checkMarketEntry(latitude, longitude);
     submitMissionLocation(latitude, longitude);
     showMessage("대상 남쪽에서 시작했어요. W 키로 접근하세요. WASD 이동 · PageUp/Down 속도 조절");
@@ -368,6 +401,8 @@ function CurrentLocation({
 
     clearPendingLocation();
     setDemoTargetName("");
+    saveDemoLocation?.(null);
+    simulationModeRef.current = false;
     if (!navigator.geolocation) {
       showMessage(
         "현재 브라우저에서는 위치 정보를 사용할 수 없습니다.",
