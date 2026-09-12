@@ -18,12 +18,14 @@ export default function MyPage() {
         <dl className="wallet-totals"><div><dt>누적 적립</dt><dd>{formatPoints(wallet.totalEarned)}</dd></div>
           <div><dt>누적 사용</dt><dd>{formatPoints(wallet.totalSpent)}</dd></div></dl>
       </section>
-      <Link className="wallet-button" to="/missions">미션으로 포인트 모으기 <span aria-hidden="true">→</span></Link>
+      <Link className="wallet-button wallet-button--exchange" to="/mypage/exchange">포인트로 혜택 교환하기 <span aria-hidden="true">→</span></Link>
+      <div className="wallet-shortcuts"><Link to="/mypage/coupons"><span>내 쿠폰</span><strong>{(wallet.coupons || []).filter((coupon) => coupon.status === "available").length}장 →</strong></Link>
+        <Link to="/missions"><span>다음 포인트 모으기</span><strong>미션 둘러보기 →</strong></Link></div>
       <section className="wallet-card" aria-labelledby="recent-points-title">
         <div className="wallet-section-heading"><h2 id="recent-points-title">최근 포인트 내역</h2><Link to="/mypage/points">전체 보기 →</Link></div>
         <PointHistoryList transactions={wallet.transactions.slice(0, 3)} />
       </section>
-      <aside className="wallet-preview"><span className="wallet-eyebrow">다음 즐거움</span><h2>모은 포인트로 시장 혜택을</h2><p>포인트 교환과 내 쿠폰 기능을 준비하고 있어요.</p></aside>
+      {wallet.balance === 0 && <Link className="wallet-button wallet-button--light" to="/missions">미션으로 포인트 모으기 →</Link>}
     </>}
   </WalletLayout>;
 }

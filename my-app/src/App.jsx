@@ -11,6 +11,8 @@ import MissionRankingsPage from "./pages/MissionRankingsPage";
 import MissionsPage from "./pages/MissionsPage";
 import MyPage from "./pages/MyPage";
 import PointHistoryPage from "./pages/PointHistoryPage";
+import PointExchangePage from "./pages/PointExchangePage";
+import MyCouponsPage from "./pages/MyCouponsPage";
 
 function App() {
   return (
@@ -38,6 +40,9 @@ function App() {
           <Route path="/missions/:missionId" element={<MissionDetailPage />} />
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/mypage/points" element={<PointHistoryPage />} />
+          <Route path="/mypage/exchange" element={<PointExchangePage />} />
+          <Route path="/mypage/coupons" element={<MyCouponsPage />} />
+          <Route path="/mypage/coupons/:couponId" element={<MyCouponsPage />} />
         </Route>
 
         {/* 관리자 화면 */}

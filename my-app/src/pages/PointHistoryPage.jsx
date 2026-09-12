@@ -13,7 +13,8 @@ export default function PointHistoryPage() {
       <div className="wallet-filters" aria-label="포인트 내역 필터">{Object.entries(filters).map(([key, label]) => (
         <button key={key} aria-pressed={filter === key} onClick={() => setFilter(key)}>{label}</button>
       ))}</div>
-      <section className="wallet-card"><PointHistoryList transactions={state.wallet.transactions.filter((item) => filter === "all" || item.type === filter)} /></section>
+      <section className="wallet-card"><PointHistoryList transactions={state.wallet.transactions.filter((item) => filter === "all" || item.type === filter)}
+        emptyMessage={filter === "all" ? undefined : `아직 ${filters[filter]} 내역이 없어요.`} /></section>
     </>}
   </WalletLayout>;
 }
