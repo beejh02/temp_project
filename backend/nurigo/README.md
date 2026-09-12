@@ -1,5 +1,35 @@
 # Nurigo Backend
 
+## Point wallet and demo exchange
+
+미션과 같은 `nurigo_anonymous_session` 쿠키로 지갑을 구분한다. 데이터는 서버 메모리에만
+보관하며 서버 재시작 시 초기화한다. 새 지갑은 0 NP이며 실제 미션·도전 보상 수령만
+적립한다. 랭킹의 시연용 초기 점수는 지갑 잔액이 아니다.
+
+| API | 응답·동작 |
+| --- | --- |
+| `GET /api/wallet` | `nickname`, `balance`, `totalEarned`, `totalSpent`, 최신순 `transactions`, `coupons` |
+| `GET /api/wallet/benefits` | 혜택 `id`, `title`, `description`, 서버 기준 `cost`, `demo` |
+| `POST /api/wallet/exchanges` | `{ "benefitId": "snack", "requestId": "UUID" }`를 받아 `{ "coupon": ..., "wallet": ... }` 반환 |
+
+지갑 조회와 교환 응답은 `Cache-Control: no-store`를 사용한다. 최초 지갑 조회는 세션을
+발급할 수 있으므로 프런트에서는 일일 미션 요청으로 쿠키가 준비된 뒤 조회한다.
+거래 내역의 `amount`는 적립이면 양수, 사용이면 음수이며 `balanceAfter`는 해당 거래 후
+잔액이다. `occurredAt`, 쿠폰 `issuedAt`·`expiresAt`은 서버의 UTC 시각이다.
+
+교환 혜택은 `snack` 10 NP, `market` 20 NP, `character` 30 NP의 시연용 예시다.
+포인트 차감·사용 내역·쿠폰 발급은 같은 잠금 안에서 처리한다. 동일 세션에서 같은
+`requestId`를 재전송하면 동일 쿠폰과 최신 지갑을 반환하며 추가 차감하지 않는다.
+다른 혜택에 이미 사용한 요청 번호와 잔액 부족은 409, 잘못된 혜택·입력은 400이다.
+클라이언트가 제출한 가격을 사용하지 않으며 누적 적립과 랭킹 점수는 교환으로 줄지 않는다.
+
+쿠폰은 고유 ID, 혜택 정보, 비용, 발급·만료 시각, `available`/`expired`, `demo: true`를
+제공한다. 발급일부터 30일이 지나면 만료로 조회되며 쿠폰 목록에는 남는다.
+실제 매장 사용·재고·취소·복원·로그인·영구 저장은 구현 범위에 포함하지 않는다.
+
+DB 없이 지갑·교환 계약과 동시 요청을 검증하려면 `./gradlew test --tests '*Wallet*'`를
+실행한다. 전체 테스트는 아래의 독립 PostGIS 설정을 사용한다.
+
 ## Runtime HTTP settings
 
 백엔드를 실행하려면 기존 Supabase 연결용 `DB_URL`, `DB_USERNAME`,
