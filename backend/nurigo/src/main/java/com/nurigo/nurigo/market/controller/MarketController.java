@@ -42,6 +42,7 @@ public class MarketController {
             @Valid @RequestBody MarketCreateRequest request
     ) {
         Market createdMarket = marketService.create(request);
+        missionMarketCoordinator.marketCreated();
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -78,9 +79,8 @@ public class MarketController {
     public ResponseEntity<Void> deleteMarket(
             @PathVariable Long marketId
     ) {
-        MarketResponse currentMarket = marketService.findById(marketId);
-        missionMarketCoordinator.validateDelete(currentMarket);
         marketService.delete(marketId);
+        missionMarketCoordinator.marketDeleted(marketId);
 
         return ResponseEntity.noContent().build();
     }

@@ -72,14 +72,14 @@ class MarketHttpContractTest {
         mockMvc.perform(delete("/api/markets/3"))
                 .andExpect(status().isNoContent());
 
-        verify(missionMarketCoordinator).validateDelete(response());
-        verify(marketService).delete(3L);
+        var order = org.mockito.Mockito.inOrder(marketService, missionMarketCoordinator);
+        order.verify(marketService).delete(3L);
+        order.verify(missionMarketCoordinator).marketDeleted(3L);
     }
 
     @Test
     void 존재하지_않는_시장은_404를_반환한다() throws Exception {
-        when(marketService.findById(404L))
-                .thenThrow(new MarketNotFoundException(404L));
+        doThrow(new MarketNotFoundException(404L)).when(marketService).delete(404L);
 
         mockMvc.perform(delete("/api/markets/404"))
                 .andExpect(status().isNotFound())
@@ -88,20 +88,13 @@ class MarketHttpContractTest {
     }
 
     @Test
-    void 미션_대상_시장은_삭제하지_않고_409를_반환한다() throws Exception {
-        when(marketService.findById(3L)).thenReturn(response());
-        doThrow(new MarketInUseException(
-                "미션 대상 시장은 삭제할 수 없습니다: 3"
-        )).when(missionMarketCoordinator).validateDelete(
-                any(MarketResponse.class)
-        );
+    void 삭제가_실패하면_미션_카탈로그를_변경하지_않는다() throws Exception {
+        doThrow(new MarketNotFoundException(3L)).when(marketService).delete(3L);
 
         mockMvc.perform(delete("/api/markets/3"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message")
-                        .value("미션 대상 시장은 삭제할 수 없습니다: 3"));
+                .andExpect(status().isNotFound());
 
-        verify(marketService, never()).delete(3L);
+        verify(missionMarketCoordinator, never()).marketDeleted(3L);
     }
 
     @Test

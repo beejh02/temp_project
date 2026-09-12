@@ -166,7 +166,7 @@ function PolygonEditor({
       return;
     }
 
-    if (!window.confirm(`${name} 시장을 삭제하시겠습니까?`)) {
+    if (!window.confirm(`${name} 시장을 삭제하시겠습니까?\n해당 시장의 미션은 목록에서 제외되며, 이미 받은 포인트와 쿠폰은 유지됩니다.`)) {
       return;
     }
 

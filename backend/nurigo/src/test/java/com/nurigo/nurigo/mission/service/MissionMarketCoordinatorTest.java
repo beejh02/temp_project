@@ -43,13 +43,9 @@ class MissionMarketCoordinatorTest {
     }
 
     @Test
-    void 미션_대상_시장은_삭제하지_않는다() {
-        MarketResponse market = market(77L, "대전 중앙시장");
-
-        assertThrows(
-                MarketInUseException.class,
-                () -> coordinator.validateDelete(market)
-        );
+    void 시장_삭제_후_실행_카탈로그를_무효화한다() {
+        coordinator.marketDeleted(77L);
+        verify(runCatalog).invalidateIfTargetMarket(77L);
     }
 
     @Test
@@ -59,19 +55,18 @@ class MissionMarketCoordinatorTest {
 
         assertThrows(
                 MarketInUseException.class,
-                () -> coordinator.validateDelete(market)
+                () -> coordinator.validateUpdate(market, "새 시장")
         );
     }
 
     @Test
-    void 일반_시장은_수정하고_삭제할_수_있다() {
+    void 일반_시장은_수정할_수_있다() {
         MarketResponse market = market(88L, "일반 시장");
 
         assertDoesNotThrow(() -> coordinator.validateUpdate(
                 market,
                 "일반 시장 수정"
         ));
-        assertDoesNotThrow(() -> coordinator.validateDelete(market));
     }
 
     @Test
@@ -79,6 +74,12 @@ class MissionMarketCoordinatorTest {
         coordinator.marketUpdated(77L);
 
         verify(runCatalog).invalidateIfTargetMarket(77L);
+    }
+
+    @Test
+    void 시장_재등록_후_빈_카탈로그도_다시_조회한다() {
+        coordinator.marketCreated();
+        verify(runCatalog).invalidate();
     }
 
     private MarketResponse market(Long id, String name) {

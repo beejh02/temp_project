@@ -24,13 +24,13 @@ public class WalletService {
     }
 
     public MissionSessionResult<WalletResponse> getWallet(String requestedSessionId) {
-        var session = stateStore.resolveSession(requestedSessionId, catalog.getDefinitions(), policy);
+        var session = stateStore.resolveSession(requestedSessionId, catalog.getAssignmentDefinitions(), policy);
         return new MissionSessionResult<>(session.sessionId(), session.created(),
                 stateStore.getWallet(session.sessionId()));
     }
 
     public MissionSessionResult<ExchangeResponse> exchange(String requestedSessionId, ExchangeRequest request) {
-        var session = stateStore.resolveSession(requestedSessionId, catalog.getDefinitions(), policy);
+        var session = stateStore.resolveSession(requestedSessionId, catalog.getAssignmentDefinitions(), policy);
         return new MissionSessionResult<>(session.sessionId(), session.created(),
                 stateStore.exchangeBenefit(session.sessionId(), request.benefitId(), request.requestId()));
     }

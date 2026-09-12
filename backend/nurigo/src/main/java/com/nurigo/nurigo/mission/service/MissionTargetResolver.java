@@ -51,6 +51,10 @@ public class MissionTargetResolver {
                 markets,
                 primaryMarketTemplate.getTargetName()
         );
+        // 관리자가 대상 시장을 삭제한 경우 그 시장과 내부 점포의 미션을 노출하지 않는다.
+        if (primaryMarket == null) {
+            return List.of();
+        }
         Map<Long, StoreResponse> uniqueStores = new LinkedHashMap<>();
 
         storeService.findStoresInsideMarket(primaryMarket.id())
@@ -87,6 +91,9 @@ public class MissionTargetResolver {
                         markets,
                         template.getTargetName()
                 );
+                if (market == null) {
+                    continue;
+                }
                 MarketResponse.LocationResponse location = market.location();
 
                 if (location == null
@@ -134,9 +141,7 @@ public class MissionTargetResolver {
                 .toList();
 
         if (matches.isEmpty()) {
-            throw new IllegalStateException(
-                    "미션 대상 시장을 DB에서 찾을 수 없습니다: " + targetName
-            );
+            return null;
         }
 
         if (matches.size() > 1) {

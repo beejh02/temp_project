@@ -28,7 +28,7 @@ class WalletExchangeHttpTest {
     @BeforeEach
     void setup() {
         var catalog = mock(MissionRunCatalog.class);
-        when(catalog.getDefinitions()).thenReturn(definitions.getDefinitions());
+        when(catalog.getAssignmentDefinitions()).thenReturn(definitions.getDefinitions());
         var policy = new DailyMissionPolicy();
         var service = new WalletService(state, catalog, policy);
         mvc = MockMvcBuilders.standaloneSetup(new WalletController(service,

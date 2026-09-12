@@ -63,14 +63,7 @@ public class MissionDemoService {
             String requestedSessionId
     ) {
         SessionAccess session = resolveSession(requestedSessionId);
-        List<MissionDefinition> definitions = runStateStore
-                .getAssignedMissionKeys(session.sessionId())
-                .stream()
-                .map(this::findDefinition)
-                .sorted(Comparator.comparingInt(
-                        MissionDefinition::getDisplayOrder
-                ))
-                .toList();
+        List<MissionDefinition> definitions = assignedDefinitions(session.sessionId());
         List<MissionResponse> responses = definitions.stream()
                 .map(definition -> toResponse(
                         session.sessionId(),
@@ -289,15 +282,15 @@ public class MissionDemoService {
     private SessionAccess resolveSession(String requestedSessionId) {
         return runStateStore.resolveSession(
                 requestedSessionId,
-                missionCatalog.getDefinitions(),
+                missionCatalog.getAssignmentDefinitions(),
                 dailyMissionPolicy
         );
     }
 
     private List<MissionDefinition> assignedDefinitions(String sessionId) {
-        return runStateStore.getAssignedMissionKeys(sessionId)
-                .stream()
-                .map(this::findDefinition)
+        List<String> assignedKeys = runStateStore.getAssignedMissionKeys(sessionId);
+        return missionCatalog.getDefinitions().stream()
+                .filter(definition -> assignedKeys.contains(definition.getMissionKey()))
                 .sorted(Comparator.comparingInt(
                         MissionDefinition::getDisplayOrder
                 ))
@@ -388,17 +381,6 @@ public class MissionDemoService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "미션을 찾을 수 없습니다: " + missionId
-                ));
-    }
-
-    private MissionDefinition findDefinition(String missionKey) {
-        return missionCatalog.getDefinitions()
-                .stream()
-                .filter(definition -> definition.getMissionKey()
-                        .equals(missionKey))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "미션 정의를 찾을 수 없습니다: " + missionKey
                 ));
     }
 

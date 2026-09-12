@@ -118,14 +118,8 @@ class MissionTargetResolverTest {
                 new DemoRunSeed("42")
         );
 
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
-                () -> resolver.resolve(
-                        new DemoMissionCatalog().getDefinitions()
-                )
-        );
-
-        assertTrue(exception.getMessage().contains("대전 중앙시장"));
+        assertTrue(resolver.resolve(new DemoMissionCatalog().getDefinitions()).isEmpty());
+        org.mockito.Mockito.verifyNoInteractions(storeService);
     }
 
     @Test

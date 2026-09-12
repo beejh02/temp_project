@@ -43,13 +43,12 @@ public class MissionMarketCoordinator {
         }
     }
 
-    public void validateDelete(MarketResponse currentMarket) {
-        if (isMissionTarget(currentMarket)) {
-            throw new MarketInUseException(
-                    "미션 대상 시장은 삭제할 수 없습니다: "
-                    + currentMarket.id()
-            );
-        }
+    public void marketDeleted(Long marketId) {
+        runCatalog.invalidateIfTargetMarket(marketId);
+    }
+
+    public void marketCreated() {
+        runCatalog.invalidate();
     }
 
     public void marketUpdated(Long marketId) {

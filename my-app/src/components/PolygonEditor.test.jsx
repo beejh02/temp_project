@@ -79,7 +79,7 @@ describe("PolygonEditor", () => {
 
     await waitFor(() => expect(props.onDeleted).toHaveBeenCalledWith(3));
     expect(globalThis.confirm)
-      .toHaveBeenCalledWith("대전중앙시장 시장을 삭제하시겠습니까?");
+      .toHaveBeenCalledWith("대전중앙시장 시장을 삭제하시겠습니까?\n해당 시장의 미션은 목록에서 제외되며, 이미 받은 포인트와 쿠폰은 유지됩니다.");
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "/api/markets/3",
       expect.objectContaining({
@@ -91,14 +91,14 @@ describe("PolygonEditor", () => {
       .toHaveTextContent("대전중앙시장 삭제 완료");
   });
 
-  it("미션 대상 시장 삭제가 거부되면 서버 메시지를 표시한다", async () => {
+  it("시장 삭제 요청이 실패하면 서버 메시지를 표시하고 편집 상태를 유지한다", async () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
     vi.spyOn(console, "error").mockImplementation(() => {});
     globalThis.fetch.mockResolvedValue({
       ok: false,
-      status: 409,
+      status: 503,
       json: async () => ({
-        message: "미션 대상 시장은 삭제할 수 없습니다: 3",
+        message: "일시적으로 시장을 삭제하지 못했습니다.",
       }),
     });
     const props = renderEditor();
@@ -106,7 +106,7 @@ describe("PolygonEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "삭제" }));
 
     expect(await screen.findByRole("alert"))
-      .toHaveTextContent("미션 대상 시장은 삭제할 수 없습니다: 3");
+      .toHaveTextContent("일시적으로 시장을 삭제하지 못했습니다.");
     expect(props.onDeleted).not.toHaveBeenCalled();
   });
 });

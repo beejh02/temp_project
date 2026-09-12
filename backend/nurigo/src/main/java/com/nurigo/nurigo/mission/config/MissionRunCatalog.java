@@ -42,6 +42,15 @@ public class MissionRunCatalog {
         }
     }
 
+    // 세션의 배정·보상 기록은 시장의 등록·삭제와 별개로 서버 실행 동안 유지한다.
+    public List<MissionDefinition> getAssignmentDefinitions() {
+        return templateCatalog.getDefinitions();
+    }
+
+    public synchronized void invalidate() {
+        definitions = null;
+    }
+
     public synchronized boolean isResolvedTargetMarket(Long marketId) {
         return definitions != null && definitions.stream()
                 .filter(definition -> definition.getTargetType()
@@ -51,7 +60,7 @@ public class MissionRunCatalog {
     }
 
     public synchronized boolean invalidateIfTargetMarket(Long marketId) {
-        if (!isResolvedTargetMarket(marketId)) {
+        if (!(definitions != null && definitions.isEmpty()) && !isResolvedTargetMarket(marketId)) {
             return false;
         }
 

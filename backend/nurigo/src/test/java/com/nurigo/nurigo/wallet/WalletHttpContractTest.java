@@ -20,7 +20,7 @@ class WalletHttpContractTest {
     @Test
     void 지갑_직접_조회도_같은_익명_세션을_발급하고_재사용한다() throws Exception {
         var catalog = mock(MissionRunCatalog.class);
-        when(catalog.getDefinitions()).thenReturn(new DemoMissionCatalog().getDefinitions());
+        when(catalog.getAssignmentDefinitions()).thenReturn(new DemoMissionCatalog().getDefinitions());
         var state = new MissionRunStateStore("42");
         var service = new WalletService(state, catalog, new DailyMissionPolicy());
         var mvc = MockMvcBuilders.standaloneSetup(new WalletController(service,
