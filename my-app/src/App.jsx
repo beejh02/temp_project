@@ -9,7 +9,8 @@ import MissionDetailPage from "./pages/MissionDetailPage";
 import MissionGuidePage from "./pages/MissionGuidePage";
 import MissionRankingsPage from "./pages/MissionRankingsPage";
 import MissionsPage from "./pages/MissionsPage";
-import SectionPlaceholderPage from "./pages/SectionPlaceholderPage";
+import MyPage from "./pages/MyPage";
+import PointHistoryPage from "./pages/PointHistoryPage";
 
 function App() {
   return (
@@ -35,16 +36,8 @@ function App() {
             element={<MissionRankingsPage />}
           />
           <Route path="/missions/:missionId" element={<MissionDetailPage />} />
-          <Route
-            path="/mypage"
-            element={(
-              <SectionPlaceholderPage
-                eyebrow="준비 중"
-                title="마이페이지"
-                description="내 포인트와 활동 기록을 확인하는 공간입니다."
-              />
-            )}
-          />
+          <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage/points" element={<PointHistoryPage />} />
         </Route>
 
         {/* 관리자 화면 */}
