@@ -113,7 +113,18 @@ function CurrentLocation({
       markerRef.current.setPosition(position);
       markerRef.current.setMap(map);
     } else {
-      markerRef.current = new window.naver.maps.Marker({ position, map });
+      markerRef.current = new window.naver.maps.Marker({
+        position,
+        map,
+        title: "내 위치",
+        icon: {
+          url: "/nurigo-location.png",
+          size: { width: 48, height: 56 },
+          scaledSize: { width: 48, height: 56 },
+          // 투명 여백을 제외한 캐릭터 발밑을 실제 위치에 맞춘다.
+          anchor: { x: 24, y: 55 },
+        },
+      });
     }
 
     map.panTo(position);
