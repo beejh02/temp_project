@@ -1,0 +1,7 @@
+package com.nurigo.nurigo.wallet.dto;
+
+import java.util.UUID;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+public record ExchangeRequest(@NotBlank String benefitId, @NotNull UUID requestId) {}

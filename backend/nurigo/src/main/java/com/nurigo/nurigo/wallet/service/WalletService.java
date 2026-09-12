@@ -7,6 +7,8 @@ import com.nurigo.nurigo.mission.policy.DailyMissionPolicy;
 import com.nurigo.nurigo.mission.runtime.MissionRunStateStore;
 import com.nurigo.nurigo.mission.service.MissionSessionResult;
 import com.nurigo.nurigo.wallet.dto.WalletResponse;
+import com.nurigo.nurigo.wallet.dto.ExchangeRequest;
+import com.nurigo.nurigo.wallet.dto.ExchangeResponse;
 
 @Service
 public class WalletService {
@@ -25,5 +27,11 @@ public class WalletService {
         var session = stateStore.resolveSession(requestedSessionId, catalog.getDefinitions(), policy);
         return new MissionSessionResult<>(session.sessionId(), session.created(),
                 stateStore.getWallet(session.sessionId()));
+    }
+
+    public MissionSessionResult<ExchangeResponse> exchange(String requestedSessionId, ExchangeRequest request) {
+        var session = stateStore.resolveSession(requestedSessionId, catalog.getDefinitions(), policy);
+        return new MissionSessionResult<>(session.sessionId(), session.created(),
+                stateStore.exchangeBenefit(session.sessionId(), request.benefitId(), request.requestId()));
     }
 }

@@ -25,6 +25,8 @@ import com.nurigo.nurigo.mission.entity.MissionStatus;
 import com.nurigo.nurigo.mission.entity.RankingPeriod;
 import com.nurigo.nurigo.mission.policy.DailyMissionPolicy;
 import com.nurigo.nurigo.wallet.dto.WalletResponse;
+import com.nurigo.nurigo.wallet.dto.ExchangeResponse;
+import com.nurigo.nurigo.wallet.runtime.DemoBenefitCatalog;
 import com.nurigo.nurigo.wallet.runtime.PointWallet;
 
 @Component
@@ -409,6 +411,12 @@ public class MissionRunStateStore {
     public synchronized WalletResponse getWallet(String sessionId) {
         ParticipantSession session = requireSession(sessionId);
         return session.wallet().snapshot(session.nickname());
+    }
+
+    public synchronized ExchangeResponse exchangeBenefit(String sessionId, String benefitId, UUID requestId) {
+        ParticipantSession session = requireSession(sessionId);
+        var coupon = session.wallet().exchange(DemoBenefitCatalog.require(benefitId), requestId, Instant.now());
+        return new ExchangeResponse(coupon, session.wallet().snapshot(session.nickname()));
     }
 
     public synchronized ChallengeStateSnapshot getChallengeState(

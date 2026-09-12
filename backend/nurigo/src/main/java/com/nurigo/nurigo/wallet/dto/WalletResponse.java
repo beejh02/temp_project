@@ -8,7 +8,7 @@ public record WalletResponse(
         int balance,
         int totalEarned,
         int totalSpent,
-        List<PointTransaction> transactions
+        List<PointTransaction> transactions, List<CouponResponse> coupons
 ) {
     public record PointTransaction(
             String id,
