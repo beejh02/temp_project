@@ -284,6 +284,26 @@ describe("MissionDemoProvider", () => {
     );
   });
 
+  it("낮은 GPS 정확도 안내를 공유 화면에 남기지 않고 다음 위치로 계속 판정한다", async () => {
+    let locationRequests = 0;
+    globalThis.fetch.mockImplementation(async (url) => {
+      if (url === "/api/missions/daily") return { ok: true, json: async () => [{ id: "mission-1", status: "available" }] };
+      locationRequests += 1;
+      if (locationRequests === 1) return { ok: false, status: 400,
+        json: async () => ({ message: "GPS 정확도가 50m 이내인 위치만 판정할 수 있습니다." }) };
+      return { ok: true, json: async () => [{ id: "mission-1", status: "completed" }] };
+    });
+    render(<MissionDemoProvider><LocationActions /><MissionState /></MissionDemoProvider>);
+    await act(async () => {});
+    fireEvent.click(screen.getByRole("button", { name: "첫 위치" }));
+    await act(async () => {});
+    expect(screen.getByTestId("mission-state")).toHaveTextContent("success/1/정상");
+    fireEvent.click(screen.getByRole("button", { name: "다음 위치" }));
+    await act(async () => {});
+    expect(locationRequests).toBe(2);
+    expect(screen.getByTestId("mission-state")).toHaveTextContent("success/1/정상");
+  });
+
   it("같은 미션의 보상 수령 요청을 처리 중에는 중복 전송하지 않는다", async () => {
     let resolveClaim;
     const claimResponse = new Promise((resolve) => {

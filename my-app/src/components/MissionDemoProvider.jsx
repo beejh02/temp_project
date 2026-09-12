@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { apiFetch } from "../utils/api";
+import { isLocationAccuracyNotice } from "../utils/locationFeedback";
 import MissionDemoContext from "../contexts/missionDemoContext";
 
 const MISSION_POLLING_MS = 7500;
@@ -223,6 +224,7 @@ function MissionDemoProvider({ children }) {
     });
 
     locationQueueRef.current = request.catch((error) => {
+      if (isLocationAccuracyNotice(error)) return;
       dispatch({
         type: "operation-error",
         message: error.message || "현재 위치를 판정하지 못했습니다.",

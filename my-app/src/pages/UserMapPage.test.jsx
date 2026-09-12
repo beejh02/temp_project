@@ -105,6 +105,7 @@ it("위치 판정·보상 후 지도로 돌아오면 시연 위치와 속도를 
   await act(async () => {});
 
   expect(screen.getByText(/시연 위치 · 시연 점포/)).toBeInTheDocument();
+  expect(screen.queryByText(/이전 시연 위치|WASD 이동|PageUp|테스트 위치:|이동 속도/)).not.toBeInTheDocument();
   expect(markerPositions.at(-1)).toMatchObject({
     lat: expect.closeTo(36.32695), lng: 127.4274,
   });

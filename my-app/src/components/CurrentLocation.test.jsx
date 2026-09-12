@@ -218,8 +218,11 @@ describe("CurrentLocation", () => {
     expect(submitted.longitude).toBeCloseTo(127.4274);
     expect(submitted.accuracy).toBe(5);
     expect(submitted.recordedAt).toBe("2026-09-04T12:00:02.000Z");
-    expect(screen.getByText(/테스트 위치: 36\.327550, 127\.427400/))
-      .toBeInTheDocument();
+    expect(screen.queryByText(/테스트 위치:|GPS 추적 중:|이동 속도/))
+      .not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "PageUp" });
+    fireEvent.keyDown(window, { key: "PageDown" });
+    expect(screen.queryByText(/이동 속도/)).not.toBeInTheDocument();
   });
 
   it("위치 권한이 거부되면 이전 좌표 전송을 멈추고 재시도 방법을 알린다", async () => {
@@ -273,14 +276,17 @@ describe("CurrentLocation", () => {
     expect(onMissionLocation).not.toHaveBeenCalled();
   });
 
-  it("미션 위치 판정 실패를 오류 알림으로 표시한다", async () => {
+  it.each([
+    ["미션 서버에 연결할 수 없습니다.", true],
+    ["GPS 정확도가 50m 이내인 위치만 판정할 수 있습니다.", false],
+  ])("위치 판정 오류 중 정확도 수치 안내만 화면에서 제외한다: %s", async (message, visible) => {
     const map = {
       panTo: vi.fn(),
       setZoom: vi.fn(),
     };
     const onMissionLocation = vi
       .fn()
-      .mockRejectedValue(new Error("미션 서버에 연결할 수 없습니다."));
+      .mockRejectedValue(new Error(message));
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     render(
@@ -288,9 +294,9 @@ describe("CurrentLocation", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "내 위치" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "미션 서버에 연결할 수 없습니다.",
-    );
+    await waitFor(() => expect(onMissionLocation).toHaveBeenCalledTimes(1));
+    if (visible) expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    else expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("입력 요소를 사용하는 동안 WASD 위치 이동을 실행하지 않는다", () => {

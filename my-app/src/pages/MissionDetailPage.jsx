@@ -173,7 +173,7 @@ function MissionDetailPage() {
         </div>
         {!isClaimed && !isClosed && (
           <p className="mission-demo-caption">
-            현재 위치 또는 WASD 이동이 목표 조건을 충족하면 자동으로 반영됩니다.
+            목표 장소에 도착하면 미션 진행 상황이 자동으로 반영돼요.
           </p>
         )}
 

@@ -3,6 +3,7 @@ import MissionDemoContext from "../contexts/missionDemoContext";
 import { safelyDetachNaverMapObject } from "../lib/naverMapCleanup";
 import { apiFetch } from "../utils/api";
 import { getMissionDemoStart } from "../utils/missionDemoLocation";
+import { isLocationAccuracyNotice } from "../utils/locationFeedback";
 import { MISSION_STATUS_LABEL, isMissionFinished } from "../data/missionConstants";
 import "./CurrentLocation.css";
 
@@ -72,9 +73,7 @@ function CurrentLocation({
   const entryMessageTimerRef = useRef(null);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState(restoredDemo
-    ? "이전 시연 위치에서 이어갑니다. WASD 이동 · PageUp/Down 속도 조절"
-    : "");
+  const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("status");
   const [entryMessage, setEntryMessage] = useState("");
 
@@ -155,6 +154,7 @@ function CurrentLocation({
       const submit = (nextLocation) => {
         lastMissionSubmissionAtRef.current = Date.now();
         Promise.resolve(onMissionLocation(nextLocation)).catch((error) => {
+          if (isLocationAccuracyNotice(error)) return;
           console.error("미션 위치 판정 중 오류:", error);
           showMessage(
             error.message || "현재 위치를 미션에 반영하지 못했습니다.",
@@ -293,7 +293,6 @@ function CurrentLocation({
         event.preventDefault();
         moveStepRef.current = Math.min(moveStepRef.current * 2, MAX_MOVE_STEP);
         rememberDemoLocation();
-        showMessage(`이동 속도 증가: ${moveStepRef.current.toFixed(6)}`);
         return;
       }
 
@@ -301,7 +300,6 @@ function CurrentLocation({
         event.preventDefault();
         moveStepRef.current = Math.max(moveStepRef.current / 2, MIN_MOVE_STEP);
         rememberDemoLocation();
-        showMessage(`이동 속도 감소: ${moveStepRef.current.toFixed(6)}`);
         return;
       }
 
@@ -359,9 +357,7 @@ function CurrentLocation({
       checkMarketEntry(lat, lng);
       submitMissionLocation(lat, lng);
 
-      showMessage(
-        `테스트 위치: ${lat.toFixed(6)}, ${lng.toFixed(6)} / 속도: ${moveStep.toFixed(6)}`,
-      );
+      showMessage("");
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -394,7 +390,7 @@ function CurrentLocation({
     rememberDemoLocation(String(selectedDemoMission.id), selectedDemoMission.target.name);
     checkMarketEntry(latitude, longitude);
     submitMissionLocation(latitude, longitude);
-    showMessage("대상 남쪽에서 시작했어요. W 키로 접근하세요. WASD 이동 · PageUp/Down 속도 조절");
+    showMessage("");
     demoPanelRef.current.open = false;
   };
 
@@ -446,9 +442,7 @@ function CurrentLocation({
         /* GPS 위치 기준 시장 진입 여부 확인 */
         checkMarketEntry(latitude, longitude);
         submitMissionLocation(latitude, longitude, accuracy);
-        showMessage(
-          `GPS 추적 중: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} / WASD 이동 / PageUp·PageDown 속도 조절`,
-        );
+        showMessage("");
 
         setIsLoading(false);
       },
@@ -547,7 +541,6 @@ function CurrentLocation({
                 ))}
               </select>
             </label>
-            <p>대상 남쪽에서 시작해 WASD로 이동하세요. 실제 GPS 없이 방문을 시연할 수 있어요.</p>
             <button
               type="button"
               className="current-location-button"
@@ -556,7 +549,6 @@ function CurrentLocation({
             >
               시연 시작
             </button>
-            <small>시작 위치만 이동하며, 미션 기록은 유지돼요.</small>
           </div>
         </details>
       )}

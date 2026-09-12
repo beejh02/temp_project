@@ -91,13 +91,6 @@
   font: inherit;
 }
 
-.location-demo-controls p,
-.location-demo-controls small {
-  margin: 0;
-  line-height: 1.5;
-  color: #475569;
-}
-
 .location-demo-controls button {
   background: #e0f2fe;
   color: #075985;
