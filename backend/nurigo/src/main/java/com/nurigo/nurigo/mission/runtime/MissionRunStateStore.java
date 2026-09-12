@@ -24,6 +24,8 @@ import com.nurigo.nurigo.mission.entity.MissionDefinition;
 import com.nurigo.nurigo.mission.entity.MissionStatus;
 import com.nurigo.nurigo.mission.entity.RankingPeriod;
 import com.nurigo.nurigo.mission.policy.DailyMissionPolicy;
+import com.nurigo.nurigo.wallet.dto.WalletResponse;
+import com.nurigo.nurigo.wallet.runtime.PointWallet;
 
 @Component
 public class MissionRunStateStore {
@@ -98,7 +100,8 @@ public class MissionRunStateStore {
                 List.copyOf(assignedMissionKeys),
                 missionStates,
                 new LocationObservationState(),
-                createChallengeState()
+                createChallengeState(),
+                new PointWallet()
         );
         sessions.put(sessionId, session);
         rankingScores.put(
@@ -221,6 +224,8 @@ public class MissionRunStateStore {
             );
         }
 
+        session.wallet().credit("mission:" + definition.getMissionKey(),
+                definition.getTitle(), definition.getRewardPoints(), Instant.now());
         participantState.status = MissionStatus.CLAIMED;
         RankingScore rankingScore = rankingScores.get(sessionId);
         rankingScore.weeklyPoints += definition.getRewardPoints();
@@ -401,6 +406,11 @@ public class MissionRunStateStore {
         );
     }
 
+    public synchronized WalletResponse getWallet(String sessionId) {
+        ParticipantSession session = requireSession(sessionId);
+        return session.wallet().snapshot(session.nickname());
+    }
+
     public synchronized ChallengeStateSnapshot getChallengeState(
             String sessionId
     ) {
@@ -440,6 +450,8 @@ public class MissionRunStateStore {
             );
         }
 
+        session.wallet().credit("challenge:three-day-streak", "3일 연속 시장 방문",
+                rewardPoints, Instant.now());
         state.claimed = true;
         RankingScore rankingScore = rankingScores.get(sessionId);
         rankingScore.weeklyPoints += rewardPoints;
@@ -682,7 +694,8 @@ public class MissionRunStateStore {
             List<String> assignedMissionKeys,
             Map<String, ParticipantMissionState> missionStates,
             LocationObservationState locationObservationState,
-            ChallengeState challengeState
+            ChallengeState challengeState,
+            PointWallet wallet
             ) {
     }
 
