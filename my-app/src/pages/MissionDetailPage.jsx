@@ -134,7 +134,7 @@ function MissionDetailPage() {
             <div>
               <small>REWARD RECEIVED</small>
               <h2>{mission.reward.toLocaleString()} NP를 받았어요!</h2>
-              <p>방문으로 모은 포인트와 내 참여 순위를 확인해 보세요.</p>
+              <p>마이페이지에서 모은 포인트와 적립 내역을 확인해 보세요.</p>
             </div>
           </section>
         )}
@@ -155,8 +155,8 @@ function MissionDetailPage() {
             지도에서 위치 보기
           </button>
           {isClaimed ? (
-            <Link className="mission-primary-action" to="/missions/rankings">
-              내 포인트·순위 보기
+            <Link className="mission-primary-action" to="/mypage">
+              내 포인트 보기
             </Link>
           ) : (
             <button

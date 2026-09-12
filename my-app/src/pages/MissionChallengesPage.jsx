@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import useMissionDemo from "../hooks/useMissionDemo";
 import { apiFetch } from "../utils/api";
 import MissionIcon from "../components/MissionIcon";
 import MissionPageHeader from "../components/MissionPageHeader";
@@ -22,6 +24,7 @@ async function requestJson(url, options) {
 }
 
 function MissionChallengesPage() {
+  const { loadStatus, errorMessage: sessionError, refreshMissions } = useMissionDemo();
   const [challenges, setChallenges] = useState([]);
   const [status, setStatus] = useState("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -31,6 +34,7 @@ function MissionChallengesPage() {
   const requestVersionRef = useRef(0);
 
   useEffect(() => {
+    if (loadStatus !== "success") return undefined;
     let disposed = false;
     let timerId = null;
     let abortController = null;
@@ -92,9 +96,10 @@ function MissionChallengesPage() {
       window.clearTimeout(timerId);
       abortController?.abort();
     };
-  }, [reloadKey]);
+  }, [loadStatus, reloadKey]);
 
   const handleRetry = () => {
+    if (loadStatus === "error") { refreshMissions(); return; }
     setErrorMessage("");
     setStatus((current) => current === "error" ? "loading" : current);
     setReloadKey((current) => current + 1);
@@ -133,17 +138,17 @@ function MissionChallengesPage() {
           description="데일리 미션과 별도로 여러 날의 누적 진행을 확인해요."
         />
 
-        {status === "loading" && (
+        {status === "loading" && loadStatus !== "error" && (
           <section className="mission-empty-card" aria-live="polite">
             <MissionIcon type="clock" />
             <p>도전 기록을 불러오고 있어요.</p>
           </section>
         )}
 
-        {status === "error" && (
+        {(status === "error" || loadStatus === "error") && (
           <section className="mission-empty-card" role="alert">
             <MissionIcon type="info" />
-            <p>{errorMessage}</p>
+            <p>{loadStatus === "error" ? sessionError : errorMessage}</p>
             <button
               type="button"
               className="mission-retry-action"
@@ -263,6 +268,9 @@ function ChallengeRecord({ challenge, pending, onClaim }) {
               ? "완주 보상 받기"
               : "오늘 방문 기록 대기"}
       </button>
+      {challenge.status === MISSION_STATUS.CLAIMED && (
+        <Link className="mission-primary-action" to="/mypage">내 포인트 보기</Link>
+      )}
     </article>
   );
 }

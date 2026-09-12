@@ -4,11 +4,11 @@ import { afterEach, expect, it, vi } from "vitest";
 import MissionDemoProvider from "../components/MissionDemoProvider";
 import { demoMission } from "../test/missionDemoFixture";
 import MissionDetailPage from "./MissionDetailPage";
-import MissionRankingsPage from "./MissionRankingsPage";
+import MyPage from "./MyPage";
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
-it("보상 수령 응답 후 랭킹으로 이동해 서버의 누적 포인트를 확인한다", async () => {
+it("보상 수령 응답 후 마이페이지에서 실제 잔액과 적립 내역을 확인한다", async () => {
   let mission = { ...demoMission, status: "completed",
     progress: { current: 1, target: 1, label: "방문 완료" },
   };
@@ -19,10 +19,10 @@ it("보상 수령 응답 후 랭킹으로 이동해 서버의 누적 포인트�
     if (url === "/api/missions/27/claim") {
       return new Promise((resolve) => { finishClaim = resolve; });
     }
-    if (url === "/api/missions/rankings?period=weekly") return response({
-      label: "주간", period: "9.1 - 9.7",
-      currentUser: { rank: 3, nickname: "시장탐험가", points: 125 },
-      leaders: [],
+    if (url === "/api/wallet") return response({
+      nickname: "시장탐험가", balance: 5, totalEarned: 5, totalSpent: 0,
+      transactions: [{ id: "mission:27", type: "earned", title: "점포 방문 보상", amount: 5,
+        balanceAfter: 5, occurredAt: "2026-09-11T01:00:00Z" }],
     });
     throw new Error(`예상하지 않은 요청: ${url}`);
   });
@@ -31,24 +31,25 @@ it("보상 수령 응답 후 랭킹으로 이동해 서버의 누적 포인트�
     <MemoryRouter initialEntries={["/missions/27"]}>
       <MissionDemoProvider><Routes>
         <Route path="/missions/:missionId" element={<MissionDetailPage />} />
-        <Route path="/missions/rankings" element={<MissionRankingsPage />} />
+        <Route path="/mypage" element={<MyPage />} />
       </Routes></MissionDemoProvider>
     </MemoryRouter>,
   );
 
   fireEvent.click(await screen.findByRole("button", { name: "보상 받기" }));
   expect(screen.getByRole("button", { name: "처리 중..." })).toBeDisabled();
-  expect(screen.queryByRole("link", { name: "내 포인트·순위 보기" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "내 포인트 보기" })).not.toBeInTheDocument();
   await act(async () => {
     mission = { ...mission, status: "claimed" };
     finishClaim(response(mission));
   });
   expect(screen.getByText("5 NP를 받았어요!")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("link", { name: "내 포인트·순위 보기" }));
+  fireEvent.click(screen.getByRole("link", { name: "내 포인트 보기" }));
 
-  expect(await screen.findByText("125 NP")).toBeInTheDocument();
-  expect(screen.getByText("3위")).toBeInTheDocument();
-  expect(fetchMock).toHaveBeenCalledWith("/api/missions/rankings?period=weekly",
+  expect(await screen.findByRole("region", { name: "사용 가능한 포인트" })).toHaveTextContent("5 NP");
+  expect(screen.getByText("점포 방문 보상")).toBeInTheDocument();
+  expect(screen.getByText("+5 NP")).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenCalledWith("/api/wallet",
     expect.objectContaining({ credentials: "include" }));
   expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/claim"))).toHaveLength(1);
 });

@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import MissionChallengesPage from "./MissionChallengesPage";
 
+vi.mock("../hooks/useMissionDemo", () => ({ default: () => ({ loadStatus: "success" }) }));
+
 describe("MissionChallengesPage", () => {
   beforeEach(() => {
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -139,5 +141,6 @@ describe("MissionChallengesPage", () => {
 
     expect(await screen.findByRole("button", { name: "보상 수령 완료" }))
       .toBeDisabled();
+    expect(screen.getByRole("link", { name: "내 포인트 보기" })).toHaveAttribute("href", "/mypage");
   });
 });
