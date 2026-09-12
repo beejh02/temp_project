@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import PointExchangePage from "./PointExchangePage";
@@ -113,7 +113,7 @@ it("서버가 잔액 부족을 알리면 성공을 표시하지 않고 최신 �
   fireEvent.click(await screen.findByRole("button", { name: "교환하기" }));
   fireEvent.click(screen.getByRole("button", { name: "10 NP로 교환 확정" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("부족해요");
-  expect(screen.getByRole("button", { name: "10 NP로 교환 확정" })).toBeDisabled();
+  await waitFor(() => expect(screen.getByRole("button", { name: "10 NP로 교환 확정" })).toBeDisabled());
   expect(screen.queryByText("교환 완료!")).not.toBeInTheDocument();
   expect(sessionStorage.getItem("nurigo.pending-exchange.v1")).toBeNull();
 });
