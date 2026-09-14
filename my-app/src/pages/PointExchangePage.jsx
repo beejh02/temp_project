@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import WalletLayout, { WalletFeedback } from "../components/WalletLayout";
+import CharacterDetailDialog from "../components/CharacterDetailDialog";
 import useWallet from "../hooks/useWallet";
 import { apiFetch } from "../utils/api";
 import { formatPoints } from "../utils/points";
@@ -13,6 +14,7 @@ export default function PointExchangePage() {
   const [catalogError, setCatalogError] = useState("");
   const [reload, setReload] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [pendingRequest, setPendingRequest] = useState(readPendingExchange);
   const requestRef = useRef(pendingRequest);
   const busyRef = useRef(false);
@@ -84,12 +86,15 @@ export default function PointExchangePage() {
       return <article className="benefit-card" key={benefit.id}>
         <div className={`benefit-art benefit-art--${index}`} aria-hidden="true">{benefit.id === "character" ? <img src="/nurigo-location.png" alt="" /> : <span>NP</span>}</div>
         <div className="benefit-card__body"><span className="coupon-badge">시연용</span><h2>{benefit.title}</h2><p>{benefit.description}</p><strong>{formatPoints(benefit.cost)}</strong>
+          {benefit.id === "character" && <button type="button" className="wallet-button benefit-detail-button" aria-haspopup="dialog"
+            onClick={() => setPreview(benefit)}>자세히보기 <span aria-hidden="true">↗</span></button>}
           <button className="wallet-button wallet-button--light" disabled={!state.wallet || Boolean(state.error) || shortage > 0 || Boolean(pendingRequest)}
             onClick={() => { setSelected(benefit); setError(""); }}>
             {shortage > 0 ? `${formatPoints(shortage)} 더 모으면 교환` : "교환하기"}</button></div>
       </article>;
     })}</div>
     <Link className="wallet-button wallet-button--light" to="/mypage/coupons">내 쿠폰 보기</Link>
+    {preview && <CharacterDetailDialog benefit={preview} onClose={() => setPreview(null)} />}
     {selected && state.wallet && <ExchangeDialog benefit={selected} balance={state.wallet.balance} busy={busy}
       retry={Boolean(pendingRequest)} error={error} onConfirm={exchange} onClose={() => { if (!busyRef.current) setSelected(null); }} />}
   </WalletLayout>;

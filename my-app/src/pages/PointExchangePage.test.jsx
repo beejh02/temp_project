@@ -7,10 +7,18 @@ import MyPage from "./MyPage";
 import PointHistoryPage from "./PointHistoryPage";
 
 vi.mock("../hooks/useMissionDemo", () => ({ default: () => ({ loadStatus: "success" }) }));
+vi.mock("../components/CharacterModelViewer", () => ({ default: () => <div>키링 3D 미리보기</div> }));
 // jsdom에는 dialog의 브라우저 표시 동작이 없어 open 상태만 대체한다.
 const originalShowModal = HTMLDialogElement.prototype.showModal;
-beforeAll(() => { HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); }; });
-afterAll(() => { HTMLDialogElement.prototype.showModal = originalShowModal; });
+const originalClose = HTMLDialogElement.prototype.close;
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+  HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
+});
+afterAll(() => {
+  HTMLDialogElement.prototype.showModal = originalShowModal;
+  HTMLDialogElement.prototype.close = originalClose;
+});
 const benefits = [
   { id: "snack", title: "시장 간식 500원 할인", cost: 10, description: "간식 혜택", demo: true },
   { id: "character", title: "누리고 캐릭터 키링", cost: 30, description: "캐릭터 선물", demo: true },
@@ -18,6 +26,7 @@ const benefits = [
 const coupon = { id: "coupon-1", benefitId: "snack", title: benefits[0].title, cost: 10,
   issuedAt: "2026-09-11T01:00:00Z", expiresAt: "2026-10-11T01:00:00Z", status: "available", demo: true };
 let wallet;
+let walletHandler;
 let exchangeHandler;
 let fetchMock;
 const response = (data) => ({ ok: true, json: async () => data });
@@ -30,9 +39,10 @@ const issue = () => {
 beforeEach(() => {
   sessionStorage.clear();
   wallet = { nickname: "탐험가", balance: 15, totalEarned: 15, totalSpent: 0, transactions: [], coupons: [] };
+  walletHandler = async () => response(wallet);
   exchangeHandler = async () => issue();
   fetchMock = vi.fn(async (url, options) => {
-    if (url === "/api/wallet") return response(wallet);
+    if (url === "/api/wallet") return walletHandler(options);
     if (url === "/api/wallet/benefits") return response(benefits);
     if (url === "/api/wallet/exchanges") return exchangeHandler(options);
     throw new Error(`예상하지 않은 요청: ${url}`);
@@ -50,6 +60,65 @@ function app(path = "/mypage/exchange") {
   </Routes></MemoryRouter>;
 }
 const exchangeCalls = () => fetchMock.mock.calls.filter(([url]) => url === "/api/wallet/exchanges");
+
+it("키링만 자세히보기를 제공하고 잔액이 부족해도 열고 닫으며 다시 볼 수 있다", async () => {
+  render(app());
+  const detailButton = await screen.findByRole("button", { name: "자세히보기", exact: true });
+  expect(screen.getAllByRole("button", { name: "자세히보기", exact: true })).toHaveLength(1);
+  expect(within(screen.getByRole("heading", { name: benefits[1].title }).closest("article"))
+    .getByRole("button", { name: "자세히보기", exact: true })).toBe(detailButton);
+  expect(within(screen.getByRole("heading", { name: benefits[0].title }).closest("article"))
+    .queryByRole("button", { name: "자세히보기", exact: true })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "15 NP 더 모으면 교환" })).toBeDisabled();
+  expect(detailButton).toBeEnabled();
+
+  fireEvent.click(detailButton);
+  const preview = screen.getByRole("dialog", { name: `${benefits[1].title} 자세히보기` });
+  expect(within(preview).getByText("30 NP")).toBeInTheDocument();
+  expect(await within(preview).findByText("키링 3D 미리보기")).toBeInTheDocument();
+  expect(exchangeCalls()).toHaveLength(0);
+  expect(sessionStorage.getItem("nurigo.pending-exchange.v1")).toBeNull();
+
+  fireEvent.click(within(preview).getByRole("button", { name: "자세히보기 닫기" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.click(detailButton);
+  fireEvent(screen.getByRole("dialog", { name: `${benefits[1].title} 자세히보기` }), new Event("cancel", { cancelable: true }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.click(detailButton);
+  expect(screen.getByRole("dialog", { name: `${benefits[1].title} 자세히보기` })).toBeInTheDocument();
+  expect(exchangeCalls()).toHaveLength(0);
+  expect(sessionStorage.getItem("nurigo.pending-exchange.v1")).toBeNull();
+});
+
+it.each(["loading", "error"])("포인트 조회가 %s 상태여도 키링을 자세히 볼 수 있다", async (walletStatus) => {
+  walletHandler = walletStatus === "loading"
+    ? () => new Promise(() => {})
+    : async () => ({ ok: false, status: 503, json: async () => ({ message: "포인트 서버에 연결할 수 없어요." }) });
+  render(app());
+  const detailButton = await screen.findByRole("button", { name: "자세히보기", exact: true });
+  if (walletStatus === "error") expect(await screen.findByRole("alert")).toHaveTextContent("포인트 서버");
+  else expect(screen.getByText("내 포인트를 불러오고 있어요.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "30 NP 더 모으면 교환" })).toBeDisabled();
+  expect(detailButton).toBeEnabled();
+  fireEvent.click(detailButton);
+  expect(screen.getByRole("dialog", { name: `${benefits[1].title} 자세히보기` })).toBeInTheDocument();
+  expect(exchangeCalls()).toHaveLength(0);
+  expect(sessionStorage.getItem("nurigo.pending-exchange.v1")).toBeNull();
+});
+
+it("키링 자세히보기는 이전 교환의 재확인 정보를 바꾸지 않는다", async () => {
+  const pending = JSON.stringify({ benefitId: "snack", requestId: "11111111-1111-4111-8111-111111111111" });
+  sessionStorage.setItem("nurigo.pending-exchange.v1", pending);
+  render(app());
+  fireEvent.click(await screen.findByRole("button", { name: "자세히보기", exact: true }));
+  fireEvent.click(within(screen.getByRole("dialog", { name: `${benefits[1].title} 자세히보기` }))
+    .getByRole("button", { name: "자세히보기 닫기" }));
+  expect(exchangeCalls()).toHaveLength(0);
+  expect(sessionStorage.getItem("nurigo.pending-exchange.v1")).toBe(pending);
+  fireEvent.click(screen.getByRole("button", { name: "이전 교환 결과 확인" }));
+  expect(within(screen.getByRole("dialog")).getByText(benefits[0].title)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "같은 요청으로 다시 확인" })).toBeEnabled();
+});
 
 it("잔액이 부족한 혜택을 안내하고 확인 전에는 교환을 요청하지 않는다", async () => {
   render(app());
