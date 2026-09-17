@@ -1,5 +1,9 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import StartupSplash from "./StartupSplash";
 import "./UserLayout.css";
+
+const SPLASH_DURATION_MS = 2000;
 
 const navigationItems = [
   {
@@ -37,38 +41,55 @@ const navigationItems = [
 ];
 
 function UserLayout() {
-  return (
-    <div className="user-layout">
-      <main className="user-layout__content">
-        <Outlet />
-      </main>
+  const [isStarting, setIsStarting] = useState(true);
 
-      <nav className="user-navigation" aria-label="주요 메뉴">
-        {navigationItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `user-navigation__item${isActive ? " is-active" : ""}`
-            }
-          >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+  useEffect(() => {
+    const timeoutId = window.setTimeout(
+      () => setIsStarting(false),
+      SPLASH_DURATION_MS,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  return (
+    <>
+      {isStarting && <StartupSplash durationMs={SPLASH_DURATION_MS} />}
+      <div
+        className="user-layout"
+        inert={isStarting}
+        aria-hidden={isStarting || undefined}
+      >
+        <main className="user-layout__content">
+          <Outlet />
+        </main>
+
+        <nav className="user-navigation" aria-label="주요 메뉴">
+          {navigationItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `user-navigation__item${isActive ? " is-active" : ""}`
+              }
             >
-              {item.icon}
-            </svg>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {item.icon}
+              </svg>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </>
   );
 }
 

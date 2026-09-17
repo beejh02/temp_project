@@ -1,0 +1,81 @@
+.startup-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, 4dvh, 40px);
+  padding: max(24px, env(safe-area-inset-top)) 0
+    max(24px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  background: #fff0d5;
+  color: #48613b;
+  font-family:
+    Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  animation: startup-splash-fade var(--splash-duration) linear both;
+}
+
+.startup-splash__image {
+  display: block;
+  flex-shrink: 1;
+  min-height: 0;
+  width: min(100%, 1308px);
+  height: auto;
+  max-height: calc(100dvh - 160px);
+  object-fit: contain;
+}
+
+.startup-splash__loading {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+}
+
+.startup-splash__track {
+  width: 140px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(51, 107, 55, 0.13);
+}
+
+.startup-splash__progress {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #247c42, #f6a21b);
+  transform-origin: left;
+  animation: startup-splash-progress var(--splash-duration) ease-out both;
+}
+
+.startup-splash__loading p {
+  margin: 0;
+  font-size: clamp(12px, 2.8vw, 14px);
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: center;
+}
+
+@keyframes startup-splash-fade {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes startup-splash-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startup-splash,
+  .startup-splash__progress {
+    animation: none;
+  }
+}
