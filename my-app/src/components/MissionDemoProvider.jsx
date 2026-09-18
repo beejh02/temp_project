@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import { apiFetch } from "../utils/api";
 import { isLocationAccuracyNotice } from "../utils/locationFeedback";
 import MissionDemoContext from "../contexts/missionDemoContext";
+import useStartup from "../hooks/useStartup";
 
 const MISSION_POLLING_MS = 7500;
 
@@ -92,8 +93,9 @@ function MissionDemoProvider({ children }) {
   const locationQueueRef = useRef(Promise.resolve());
   const missionActionRequestsRef = useRef(new Map());
   const requestVersionRef = useRef(0);
+  const reportTask = useStartup()?.reportTask;
 
-  const loadMissions = useCallback(async ({ silent = false } = {}) => {
+  const loadMissions = useCallback(async ({ silent = false, signal } = {}) => {
     const requestVersion = ++requestVersionRef.current;
 
     if (!silent) {
@@ -101,17 +103,17 @@ function MissionDemoProvider({ children }) {
     }
 
     try {
-      const missions = await requestJson("/api/missions/daily");
+      const missions = await requestJson("/api/missions/daily", { signal });
 
       if (!Array.isArray(missions)) {
         throw new Error("미션 목록 응답 형식이 올바르지 않습니다.");
       }
 
-      if (requestVersion === requestVersionRef.current) {
+      if (!signal?.aborted && requestVersion === requestVersionRef.current) {
         dispatch({ type: "replace", missions });
       }
     } catch (error) {
-      if (requestVersion === requestVersionRef.current) {
+      if (!signal?.aborted && requestVersion === requestVersionRef.current) {
         dispatch({
           type: silent ? "refresh-error" : "load-error",
           message: error.message || "미션 목록을 불러오지 못했습니다.",
@@ -121,8 +123,19 @@ function MissionDemoProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    loadMissions();
+    const abortController = new AbortController();
+    loadMissions({ signal: abortController.signal });
+
+    return () => abortController.abort();
   }, [loadMissions]);
+
+  useEffect(() => {
+    if (state.loadStatus === "success") {
+      reportTask?.("missions", "ready");
+    } else if (state.loadStatus === "error") {
+      reportTask?.("missions", "error");
+    }
+  }, [state.loadStatus, reportTask]);
 
   useEffect(() => {
     let disposed = false;

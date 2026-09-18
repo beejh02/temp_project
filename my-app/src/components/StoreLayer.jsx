@@ -6,6 +6,7 @@ import {
 import { getDominantStoreCategory } from "./storeCategories";
 import "./StoreLayer.css";
 import { apiFetch } from "../utils/api";
+import useStartup from "../hooks/useStartup";
 
 const MAP_INTERACTION_EVENTS = ["pointerdown", "mousedown", "touchstart"];
 const CATEGORY_MARKER_THRESHOLD = 20;
@@ -313,6 +314,7 @@ function StoreLayer({
   const [selectedLocationKey, setSelectedLocationKey] = useState(null);
   const [selectedStoreId, setSelectedStoreId] = useState(null);
   const [mapRevision, setMapRevision] = useState(0);
+  const reportTask = useStartup()?.reportTask;
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -335,13 +337,19 @@ function StoreLayer({
           throw new Error("점포 조회 응답 형식이 올바르지 않습니다.");
         }
 
+        if (abortController.signal.aborted) {
+          return;
+        }
+
         setStores(data);
         onStoresLoad?.(data);
         onLoadStateChange?.("success");
+        reportTask?.("stores", "ready");
       } catch (error) {
-        if (error.name !== "AbortError") {
+        if (!abortController.signal.aborted && error.name !== "AbortError") {
           console.error("Polygon 내부 점포 조회 중 오류:", error);
           onLoadStateChange?.("error");
+          reportTask?.("stores", "error");
         }
       }
     };
@@ -351,7 +359,7 @@ function StoreLayer({
     return () => {
       abortController.abort();
     };
-  }, [refreshKey, onStoresLoad, onLoadStateChange]);
+  }, [refreshKey, onStoresLoad, onLoadStateChange, reportTask]);
 
   useEffect(() => {
     if (!map || !window.naver?.maps) {

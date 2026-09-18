@@ -10,6 +10,7 @@ import MissionLayer from "../components/MissionLayer";
 import StoreLayer from "../components/StoreLayer";
 import { MISSION_TARGET_TYPE } from "../data/missionConstants";
 import useMissionDemo from "../hooks/useMissionDemo";
+import useStartup from "../hooks/useStartup";
 
 import "../App.css";
 
@@ -22,6 +23,7 @@ function UserMapPage() {
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
   const [searchParams] = useSearchParams();
   const { missions, recordMissionLocation } = useMissionDemo();
+  const reportTask = useStartup()?.reportTask;
   const focusedMissionId = searchParams.get("missionId");
   const missionStoreIds = useMemo(
     () =>
@@ -55,12 +57,18 @@ function UserMapPage() {
           throw new Error("시장 조회 응답 형식이 올바르지 않습니다.");
         }
 
+        if (abortController.signal.aborted) {
+          return;
+        }
+
         setMarkets(data);
         setMarketLoadStatus("success");
+        reportTask?.("markets", "ready");
       } catch (error) {
-        if (error.name !== "AbortError") {
+        if (!abortController.signal.aborted && error.name !== "AbortError") {
           console.error("시장 조회 중 오류:", error);
           setMarketLoadStatus("error");
+          reportTask?.("markets", "error");
         }
       }
     };
@@ -70,7 +78,7 @@ function UserMapPage() {
     return () => {
       abortController.abort();
     };
-  }, [dataRefreshKey]);
+  }, [dataRefreshKey, reportTask]);
 
   return (
     <div className="app">

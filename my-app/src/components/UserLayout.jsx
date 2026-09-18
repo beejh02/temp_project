@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import StartupSplash from "./StartupSplash";
 import "./UserLayout.css";
-
-const SPLASH_DURATION_MS = 2000;
 
 const navigationItems = [
   {
@@ -42,18 +40,11 @@ const navigationItems = [
 
 function UserLayout() {
   const [isStarting, setIsStarting] = useState(true);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(
-      () => setIsStarting(false),
-      SPLASH_DURATION_MS,
-    );
-    return () => window.clearTimeout(timeoutId);
-  }, []);
+  const finishStartup = useCallback(() => setIsStarting(false), []);
 
   return (
     <>
-      {isStarting && <StartupSplash durationMs={SPLASH_DURATION_MS} />}
+      {isStarting && <StartupSplash onComplete={finishStartup} />}
       <div
         className="user-layout"
         inert={isStarting}

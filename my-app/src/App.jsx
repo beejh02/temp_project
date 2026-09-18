@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import MissionDemoProvider from "./components/MissionDemoProvider";
+import StartupProvider from "./components/StartupProvider";
 import UserLayout from "./components/UserLayout";
 import UserMapPage from "./pages/UserMapPage";
 import AdminMapPage from "./pages/AdminMapPage";
@@ -21,9 +22,11 @@ function App() {
         {/* 사용자 화면 */}
         <Route
           element={(
-            <MissionDemoProvider>
-              <UserLayout />
-            </MissionDemoProvider>
+            <StartupProvider>
+              <MissionDemoProvider>
+                <UserLayout />
+              </MissionDemoProvider>
+            </StartupProvider>
           )}
         >
           <Route path="/" element={<UserMapPage />} />

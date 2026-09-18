@@ -4,6 +4,7 @@ import {
   loadNaverMaps,
   subscribeNaverMapsFailure,
 } from "../lib/naverMaps";
+import useStartup from "../hooks/useStartup";
 import "./NaverMap.css";
 
 function NaverMap({ onMapReady }) {
@@ -12,6 +13,7 @@ function NaverMap({ onMapReady }) {
   const onMapReadyRef = useRef(onMapReady);
   const [loadError, setLoadError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const reportTask = useStartup()?.reportTask;
 
   /* 부모에서 전달된 callback 최신 상태 유지 */
   useEffect(() => {
@@ -36,6 +38,7 @@ function NaverMap({ onMapReady }) {
       mapInstanceRef.current = null;
       onMapReadyRef.current?.(null);
       setLoadError(error.message);
+      reportTask?.("map", "error");
     };
     const unsubscribeFailure = subscribeNaverMapsFailure(handleLoadFailure);
 
@@ -87,6 +90,7 @@ function NaverMap({ onMapReady }) {
         });
 
         window.addEventListener("resize", resizeMap);
+        reportTask?.("map", "ready");
       })
       .catch((error) => {
         handleLoadFailure(error);
@@ -104,7 +108,7 @@ function NaverMap({ onMapReady }) {
       mapInstanceRef.current = null;
       onMapReadyRef.current?.(null);
     };
-  }, [reloadKey]);
+  }, [reloadKey, reportTask]);
 
   return (
     <>
