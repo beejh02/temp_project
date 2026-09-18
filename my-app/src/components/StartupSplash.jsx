@@ -64,84 +64,41 @@ function StartupSplash({ onComplete }) {
       aria-label="누리고 시작 화면"
       style={{ "--splash-exit-duration": `${EXIT_DURATION_MS}ms` }}
     >
-      <header className="startup-splash__header">
-        <span className="startup-splash__brand">
-          <svg viewBox="0 0 32 36" fill="none" aria-hidden="true">
-            <path d="M29 14c0 10-13 20-13 20S3 24 3 14a13 13 0 0 1 26 0Z" fill="currentColor" />
-            <path d="m10 14 4 4 8-9" stroke="#fff8e9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span>누리고<small>NURIGO</small></span>
-        </span>
-        <span className="startup-splash__edition">우리 동네를 누리는 시간</span>
-      </header>
+      <img
+        className="startup-splash__background"
+        src={loadingImage}
+        alt="누리고, 전통시장에서 만나는 우리 동네의 즐거움"
+        width="1308"
+        height="681"
+        fetchPriority="high"
+        draggable="false"
+        onLoad={() => reportTask("image", "ready")}
+        onError={() => reportTask("image", "error")}
+      />
+      <div className="startup-splash__shade" aria-hidden="true" />
 
-      <div className="startup-splash__body">
-        <div className="startup-splash__art">
-          <img
-            className="startup-splash__image"
-            src={loadingImage}
-            alt="누리고, 전통시장에서 만나는 우리 동네의 즐거움"
-            width="1308"
-            height="681"
-            fetchPriority="high"
-            draggable="false"
-            onLoad={() => reportTask("image", "ready")}
-            onError={() => reportTask("image", "error")}
-          />
-          <span className="startup-splash__art-caption" aria-hidden="true">
-            익숙한 골목에서 만나는 새로운 발견
-          </span>
+      <div className="startup-splash__loader">
+        <div className="startup-splash__character" aria-hidden="true">
+          <img src="/nurigo-location.png" alt="" width="88" height="106" draggable="false" />
+          <span className="startup-splash__character-shadow" />
         </div>
-
-        <div className="startup-splash__intro">
-          <p className="startup-splash__eyebrow"><span /> LET’S GO LOCAL</p>
-          <h1>골목마다 발견하는<br /><em>작은 즐거움.</em></h1>
-          <p className="startup-splash__description">
-            정겨운 시장부터 새로운 단골 가게까지.<br />
-            걷고, 발견하고, 오늘의 미션을 누려보세요.
-          </p>
-
-          <div className="startup-splash__loading">
-            <div className="startup-splash__loading-heading">
-              <span>{timedOut || (allSettled && hasErrors)
-                ? "기본 화면으로 이동 중"
-                : allSettled ? "탐험 준비 완료" : "동네 탐험 준비 중"}</span>
-              <strong className="startup-splash__percent">{progress}<small>%</small></strong>
-            </div>
-            <div
-              className="startup-splash__track"
-              role="progressbar"
-              aria-label="누리고 로딩 진행률"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress}
-              aria-valuetext={`${tasks.length}개 준비 단계 중 ${readyCount}개 완료`}
-            >
-              <span className="startup-splash__progress" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="startup-splash__status" role="status">{message}</p>
-            <ol className="startup-splash__steps" aria-label="시작 준비 단계">
-              {tasks.map((task) => (
-                <li key={task.id} className={`is-${task.status}${task.id === pendingTask?.id ? " is-current" : ""}`}>
-                  <span className="startup-splash__step-icon" aria-hidden="true">
-                    {task.status === "ready" ? "✓" : task.status === "error" ? "!" : ""}
-                  </span>
-                  <span>{task.label}</span>
-                  <span className="startup-splash__sr-only">
-                    {task.status === "ready" ? " 완료" : task.status === "error" ? " 연결 실패" : " 준비 중"}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
+        <div
+          className="startup-splash__track"
+          role="progressbar"
+          aria-label="누리고 로딩 진행률"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
+          aria-valuetext={`${tasks.length}개 준비 단계 중 ${readyCount}개 완료`}
+        >
+          <span className="startup-splash__progress" style={{ width: `${progress}%` }} />
         </div>
+        <div className="startup-splash__caption" aria-hidden="true">
+          <span>{progress === 100 ? "READY" : "LOADING"}</span>
+          <span>{progress}%</span>
+        </div>
+        <p className="startup-splash__sr-only" role="status">{message}</p>
       </div>
-
-      <footer className="startup-splash__footer">
-        <span>발걸음이 닿는 곳마다, 누리고</span>
-        <span className="startup-splash__footer-line" aria-hidden="true" />
-        <span>YOUR NEIGHBORHOOD, REDISCOVERED</span>
-      </footer>
     </section>
   );
 }
